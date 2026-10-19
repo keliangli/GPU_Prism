@@ -20,6 +20,7 @@ export class DeepLab {
   }
   render() {
     if(!this.container)return;
+    this.container.dataset.labKind=this.level;
     this.container.innerHTML=this.level==='shared'?this.sharedView():this.level==='registers'?this.registerView():this.level==='warp'?this.warpView():this.gatewayView();
     this.container.onclick=e=>this.click(e);
     this.container.oninput=e=>this.input(e);
@@ -82,7 +83,7 @@ export class DeepLab {
       oldControls.querySelector('.lab-formula').innerHTML=newControls.querySelector('.lab-formula').innerHTML;
       const result=oldControls.querySelector('.lab-result');if(result)result.outerHTML=newControls.querySelector('.lab-result').outerHTML;
       const panel=this.container.querySelector('.bank-experiment,.register-experiment');panel.replaceWith(replacement.querySelector('.bank-experiment,.register-experiment'));
-    }else{this.render();const current=this.container.querySelector(`#${focusedId}`);if(current){current.value=selection;current.focus();}}
+    }else{this.render();const current=focusedId?this.container.querySelector(`#${CSS.escape(focusedId)}`):null;if(current){current.value=selection;current.focus();}}
     this.emit();
   }
 }

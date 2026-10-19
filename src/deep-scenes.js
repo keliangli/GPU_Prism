@@ -1,9 +1,11 @@
 import * as THREE from 'three';
+import { colorFor, ROLE_COLORS } from './palette.js';
 
 // Every layout below is an explanatory model, not a recovered silicon floorplan.
 // In particular, register subdivisions and displayed ports are illustrative.
+const BANK_COLORS = ['#43b8d1', '#62cbdb', '#7cdaea', '#53bedb'];
 
-function plaque(s, parent, text, x, y, z, width = 1.0, color = '#c7dfcc', id) {
+function plaque(s, parent, text, x, y, z, width = 1.0, color = '#d5e3f5', id) {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 96;
@@ -49,8 +51,8 @@ function chip(s, parent, id, level, position, size, material, text) {
   const group = s.group(parent, id, level, position);
   s.box(group, size[0] + .1, .045, size[1] + .1, 0, 0, 0, s.mats.interposer, id, .018);
   s.box(group, size[0], .18, size[1], 0, .11, 0, material, id, .025);
-  s.box(group, size[0] - .14, .018, size[1] - .14, 0, .211, 0, s.mats.graphite, id, .008);
-  if (text) plaque(s, group, text, 0, .225, size[1] > .7 ? -size[1] / 2 + .13 : 0, size[0] - .08, '#d8e6d3', id);
+  s.box(group, size[0] - .14, .018, size[1] - .14, 0, .211, 0, material, id, .008);
+  if (text) plaque(s, group, text, 0, .225, size[1] > .7 ? -size[1] / 2 + .13 : 0, size[0] - .08, '#18273b', id);
   return group;
 }
 
@@ -59,24 +61,24 @@ export function createSharedScene(s) {
   const banks = s.group(root, 'banks', 'shared', [0, .23, -.35]);
   s.bankTiles = [];
   s.bankMaterials = [];
-  const cyan = s.material(0x77b9ab, .7, .32, 0x2b7666, .12);
-  const decoder = chip(s, root, 'address', 'shared', [0, .235, -2.22], [5.7, .42], s.mats.gold, 'ADDRESS DECODE / BANK ROUTING');
+  const cyan = s.material(ROLE_COLORS.memory, .34, .45, 0x175a72, .08);
+  const decoder = chip(s, root, 'address', 'shared', [0, .235, -2.22], [5.7, .42], s.mats.control, 'ADDRESS DECODE / BANK ROUTING');
   for (let i = 0; i < 32; i++) {
     const x = -2.65 + (i % 8) * .755;
     const z = -1.075 + Math.floor(i / 8) * .71;
     const bank = s.group(banks, 'bank', null, [x, 0, z]);
     bank.userData.bank = i;
-    const material = s.material(i % 2 ? 0x88bca4 : 0x77b9ab, .72, .34, 0x225d4e, .13);
+    const material = s.material(BANK_COLORS[Math.floor(i / 8)], .32, .46, 0x175a72, .08);
     s.bankMaterials.push(material);
     s.bankTiles.push(bank);
     s.box(bank, .64, .04, .59, 0, 0, 0, s.mats.gold, 'bank', .012);
     // SRAM layers visually stand in for rows, rather than transistor topology.
     for (let row = 0; row < 3; row++) {
-      s.box(bank, .58, .072, .53, 0, .072 + row * .087, 0, row === 2 ? material : s.mats.graphite, 'bank', .009);
+      s.box(bank, .58, .072, .53, 0, .072 + row * .087, 0, row === 2 ? material : s.mats.memoryDark, 'bank', .009);
       s.box(bank, .6, .009, .55, 0, .112 + row * .087, 0, s.mats.metal, 'bank', .006);
     }
     for (let col = 0; col < 4; col++) s.box(bank, .06, .012, .35, -.19 + col * .127, .294, 0, material, 'bank', .003);
-    plaque(s, bank, String(i).padStart(2, '0'), 0, .32, .03, .39, '#ebf5e8', 'bank');
+    plaque(s, bank, String(i).padStart(2, '0'), 0, .32, .03, .39, '#153247', 'bank');
     const fabricX = -2.65 + (i % 8) * .755;
     route(s, root, [[fabricX, -1.84], [fabricX, z - .35]], s.mats.etch);
   }
@@ -87,9 +89,9 @@ export function createSharedScene(s) {
   const fabric = s.group(root, 'banks', null, [0, .245, 1.42]);
   s.box(fabric, 6.27, .08, .25, 0, 0, 0, cyan, 'banks', .012);
   for (let i = 0; i < 32; i++) s.box(fabric, .018, .015, .19, -3.01 + i * .194, .05, 0, s.mats.gold, 'banks', .002);
-  const lsu = chip(s, root, 'lsu', 'shared', [-2.28, .245, 2.03], [1.6, .68], s.mats.mint, 'LOAD / STORE');
-  const tma = chip(s, root, 'tma', 'shared', [0, .245, 2.03], [1.6, .68], s.mats.lime, 'TMA');
-  const barrier = chip(s, root, 'barrier', 'shared', [2.28, .245, 2.03], [1.6, .68], s.mats.gold, 'MBARRIER');
+  const lsu = chip(s, root, 'lsu', 'shared', [-2.28, .245, 2.03], [1.6, .68], s.mats.lsu, 'LOAD / STORE');
+  const tma = chip(s, root, 'tma', 'shared', [0, .245, 2.03], [1.6, .68], s.mats.transfer, 'TMA');
+  const barrier = chip(s, root, 'barrier', 'shared', [2.28, .245, 2.03], [1.6, .68], s.mats.interconnect, 'MBARRIER');
   for (const x of [-2.28, 0, 2.28]) route(s, root, [[x, 1.42], [x, 2.03]]);
   s.explosion(lsu, .35);
   s.explosion(tma, .48);
@@ -105,7 +107,7 @@ export function createSharedScene(s) {
 export function createRegistersScene(s) {
   const root = foundation(s, 'registers', 7.35, 5.65);
   const file = s.group(root, 'registerFile', 'registers', [0, .23, -.79]);
-  s.registerRowMaterials = Array.from({ length: 8 }, () => s.material(0x84b49a, .67, .34, 0x204d37, .08));
+  s.registerRowMaterials = Array.from({ length: 8 }, () => s.material(ROLE_COLORS.registers, .34, .47, 0x805518, .06));
   for (let partition = 0; partition < 4; partition++) {
     const x = -2.45 + partition * 1.63;
     const sub = s.group(file, 'registerBank', null, [x, 0, 0]);
@@ -119,9 +121,9 @@ export function createRegistersScene(s) {
         s.box(sub, .145, .009, .028, -.46 + col * .231, .26, z, s.mats.metal, 'registerBank', 0);
       }
     }
-    plaque(s, sub, `PARTITION ${partition}`, 0, .275, 1.09, 1.21, '#e2edda', 'registerBank');
+    plaque(s, sub, `PARTITION ${partition}`, 0, .275, 1.09, 1.21, '#f3d39b', 'registerBank');
     for (const side of [-1, 1]) {
-      s.box(sub, .063, .08, 2.2, side * .663, .208, -.03, side < 0 ? s.mats.mint : s.mats.gold, 'registerBank', .006);
+      s.box(sub, .063, .08, 2.2, side * .663, .208, -.03, side < 0 ? s.mats.register : s.mats.registerLight, 'registerBank', .006);
     }
   }
   s.explosion(file, .7);
@@ -129,21 +131,21 @@ export function createRegistersScene(s) {
   const writeback = s.group(root, 'writeback', 'registers', [0, .25, 2.09]);
   for (let partition = 0; partition < 4; partition++) {
     const x = -2.45 + partition * 1.63;
-    s.box(operand, 1.4, .18, .53, x, .08, 0, s.mats.mint, 'operand', .017);
+    s.box(operand, 1.4, .18, .53, x, .08, 0, s.mats.register, 'operand', .017);
     s.box(operand, 1.17, .015, .34, x, .18, 0, s.mats.graphite, 'operand', .006);
     for (let i = 0; i < 3; i++) {
-      s.box(operand, .24, .04, .24, x - .34 + i * .34, .2, 0, s.mats.gold, 'operand', .007);
+      s.box(operand, .24, .04, .24, x - .34 + i * .34, .2, 0, s.mats.registerLight, 'operand', .007);
       route(s, root, [[x - .34 + i * .34, .53], [x - .34 + i * .34, .88]]);
     }
-    s.box(writeback, 1.41, .16, .54, x, .08, 0, s.mats.lime, 'writeback', .015);
-    plaque(s, writeback, 'ALU / WRITEBACK', x, .17, 0, 1.28, '#133026', 'writeback');
+    s.box(writeback, 1.41, .16, .54, x, .08, 0, s.mats.transfer, 'writeback', .015);
+    plaque(s, writeback, 'ALU / WRITEBACK', x, .17, 0, 1.28, '#18273b', 'writeback');
     for (const dx of [-.5, .5]) route(s, root, [[x + dx, 1.42], [x + dx, 1.82]]);
     route(s, root, [[x + .73, 2.09], [x + .73, -.8], [x + .65, -.8]]);
     s.addFlow(root, 'registers', [new THREE.Vector3(x, .65, -.6), new THREE.Vector3(x, .65, 2.05)], 3);
   }
   s.explosion(operand, .4);
   s.explosion(writeback, 1.05);
-  const spill = chip(s, root, 'spill', 'registers', [0, .24, -2.31], [3.3, .36], s.mats.graphite, 'LOCAL MEMORY / SPILL PATH');
+  const spill = chip(s, root, 'spill', 'registers', [0, .24, -2.31], [3.3, .36], s.mats.interconnect, 'LOCAL MEMORY / SPILL PATH');
   for (const x of [-2.45, -.82, .82, 2.45]) route(s, root, [[x, -2.05], [x, -2.31], [0, -2.31]]);
   s.label('registers', file, 'registerFile', 'REGISTER FILE ×4', [0, .45, -.63], [0, -36]);
   s.label('registers', s.targets.registers.registerBank, 'registerBank', 'REGISTER ARRAYS', [0, .36, .3], [-47, 1]);
@@ -160,12 +162,12 @@ export function createWarpScene(s) {
   s.warpPoolMaterials = [];
   for (let warp = 0; warp < 4; warp++) {
     const x = -2.32 + warp * 1.55;
-    const material = s.material(0x658e73, .65, .35, 0x264d31, .09);
+    const material = s.material(colorFor('warpPool'), .34, .46, 0x533382, .06);
     s.warpPoolMaterials.push(material);
     s.box(pool, 1.38, .19, .43, x, .08, 0, material, 'warpPool', .015);
     // A warp has32 logical thread lanes; these marks are not storage cells.
     for (let lane = 0; lane < 32; lane++) s.box(pool, .045, .016, .065, x - .566 + (lane % 16) * .0755, .184, -.12 + Math.floor(lane / 16) * .24, s.mats.gold, 'warpPool', .002);
-    plaque(s, pool, `WARP ${warp}`, x, .206, .01, .8, '#eff8d7', 'warpPool');
+    plaque(s, pool, `WARP ${warp}`, x, .206, .01, .8, '#242344', 'warpPool');
   }
   // A loop shows the logical instruction path; the geometry is intentionally schematic.
   const stages = [
@@ -178,17 +180,17 @@ export function createWarpScene(s) {
     ['writeback', 0, 1.9, '07 / WRITEBACK', .58],
   ];
   for (const [id, x, z, text, depth] of stages) {
-    const material = s.material(id === 'execute' ? 0xa0bd76 : 0x789981, .7, .33, 0x2d563b, .09);
+    const material = s.material(colorFor(id), .34, .46, colorFor(id), .045);
     s.warpStageMaterials[id] = material;
     const group = chip(s, root, id, 'warp', [x, .25, z], [1.72, depth], material, text);
     s.warpStages[id] = group;
     s.explosion(group, id === 'execute' ? .85 : id === 'operand' ? .6 : .35);
     if (id === 'scoreboard') {
-      for (let i = 0; i < 3; i++) for (let j = 0; j < 6; j++) s.box(group, .13, .03, .065, -.62 + j * .249, .24, -.04 + i * .16, i === 0 ? s.mats.lime : s.mats.mint, id, .002);
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 6; j++) s.box(group, .13, .03, .065, -.62 + j * .249, .24, -.04 + i * .16, i === 0 ? s.mats.registerLight : s.mats.graphite, id, .002);
     }
     if (id === 'execute') {
       for (let unit = 0; unit < 4; unit++) {
-        s.box(group, .315, .12, .39, -.57 + unit * .38, .28, .1, unit === 2 ? s.mats.lime : s.mats.mint, id, .012);
+        s.box(group, .315, .12, .39, -.57 + unit * .38, .28, .1, unit === 2 ? s.mats.compute : s.mats.tensorDark, id, .012);
         for (let i = 0; i < 4; i++) s.box(group, .041, .014, .26, -.68 + unit * .38 + i * .07, .348, .1, s.mats.metal, id, .002);
       }
     }
@@ -196,8 +198,8 @@ export function createWarpScene(s) {
       for (let i = 0; i < 5; i++) s.box(group, .17, .04, .2, -.56 + i * .28, .24, .1, s.mats.gold, id, .005);
     }
   }
-  const simt = chip(s, root, 'simt', 'warp', [2.3, .25, 1.9], [1.72, .58], s.mats.gold);
-  for (let lane = 0; lane < 32; lane++) s.box(simt, .13, .024, .065, -.66 + (lane % 8) * .189, .24, -.16 + Math.floor(lane / 8) * .107, s.mats.lime, 'simt', .002);
+  const simt = chip(s, root, 'simt', 'warp', [2.3, .25, 1.9], [1.72, .58], s.mats.interconnect);
+  for (let lane = 0; lane < 32; lane++) s.box(simt, .13, .024, .065, -.66 + (lane % 8) * .189, .24, -.16 + Math.floor(lane / 8) * .107, s.mats.metal, 'simt', .002);
   s.explosion(simt, .5);
   s.explosion(pool, .22);
   for (const [a, b] of [['fetch', 'scoreboard'], ['scoreboard', 'scheduler'], ['scheduler', 'dispatch'], ['dispatch', 'operand'], ['operand', 'execute']]) {
@@ -223,13 +225,16 @@ export function createWarpScene(s) {
 
 export function applyDeepExperiment(s, state) {
   if (s.bankMaterials) {
+    const hasAccesses = state.bankCounts?.some(count => Number(count) > 0);
     for (let i = 0; i < s.bankMaterials.length; i++) {
       const count = Math.max(0, Number(state.bankCounts?.[i]) || 0);
       const selected = state.selectedBank === i;
       const material = s.bankMaterials[i];
-      material.color.setHex(count > 1 ? 0xe0a15c : count === 1 ? 0xb8ed6c : selected ? 0xb0dfd4 : i % 2 ? 0x88bca4 : 0x77b9ab);
-      material.emissive.setHex(count > 1 ? 0xe18c38 : count ? 0x8fc945 : selected ? 0x5cb4a0 : 0x225d4e);
-      material.emissiveIntensity = count > 1 ? .38 : count ? .32 : selected ? .24 : .08;
+      const base = count > 1 ? ROLE_COLORS.conflict : count === 1 ? '#6ed7e7' : hasAccesses ? ROLE_COLORS.inactive : BANK_COLORS[Math.floor(i / 8)];
+      material.color.set(base);
+      if (selected) material.color.lerp(new THREE.Color('#ecfcff'), .42);
+      material.emissive.set(count > 1 ? '#b64e39' : count || selected ? '#237f9a' : '#102d44');
+      material.emissiveIntensity = count > 1 ? .3 : count ? .23 : selected ? .2 : .04;
     }
     if (Number.isInteger(state.selectedBank) && s.bankTiles[state.selectedBank]) {
       s.lastBank = state.selectedBank;
@@ -238,20 +243,21 @@ export function applyDeepExperiment(s, state) {
   }
   const rows = Math.ceil(THREE.MathUtils.clamp(Number(state.registerUsage) || 64, 1, 255) / 255 * 8);
   s.registerRowMaterials?.forEach((material, index) => {
-    material.color.setHex(index < rows ? 0xa6cf83 : 0x345247);
-    material.emissive.setHex(index < rows ? 0x476b24 : 0x000000);
-    material.emissiveIntensity = index < rows ? .16 : 0;
+    material.color.set(index < rows ? (index % 2 ? '#f4cb82' : ROLE_COLORS.registers) : '#35445c');
+    material.emissive.setHex(index < rows ? 0x805518 : 0x000000);
+    material.emissiveIntensity = index < rows ? .1 : 0;
   });
   for (const [id, material] of Object.entries(s.warpStageMaterials || {})) {
     const active = id === state.stage;
-    material.color.setHex(active ? 0xc5ee83 : id === 'execute' ? 0xa0bd76 : 0x789981);
-    material.emissive.setHex(active ? 0x91c549 : 0x2d563b);
-    material.emissiveIntensity = active ? .5 : .07;
+    material.color.set(colorFor(id));
+    if (active) material.color.lerp(new THREE.Color('#f0f7ff'), .24);
+    material.emissive.set(colorFor(id));
+    material.emissiveIntensity = active ? .28 : .045;
   }
   s.warpPoolMaterials?.forEach((material, index) => {
     const active = index === state.activeWarp;
-    material.color.setHex(active ? 0xb8ed6c : 0x658e73);
-    material.emissive.setHex(active ? 0x83ab37 : 0x264d31);
-    material.emissiveIntensity = active ? .4 : .07;
+    material.color.set(active ? '#c9b8ff' : '#8976bb');
+    material.emissive.setHex(active ? 0x7858b9 : 0x3c285f);
+    material.emissiveIntensity = active ? .25 : .05;
   });
 }

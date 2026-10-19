@@ -1,3 +1,4 @@
+import { colorFor } from './palette.js';
 export const sources = [
  { title: 'NVIDIA AI Enterprise · Hopper vGPU', label: 'H20 SXM5 96GB 产品与 MIG 配置', url: 'https://docs.nvidia.com/ai-enterprise/release-7/latest/infra-software/vgpu/reference/hopper.html', kind: 'NVIDIA 官方文档' },
  { title: 'NVIDIA Hopper Architecture In-Depth', label: 'SM、Tensor Core、TMA 与存储层级', url: 'https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/', kind: 'NVIDIA 技术文档' },
@@ -62,3 +63,6 @@ export const levels = {
  registers:{name:'寄存器文件',en:'REGISTER FILE',index:'05',title:'从线程变量，走进片上寄存器。',parent:'sm',default:'registerFile'},
  warp:{name:'Warp 执行流水线',en:'WARP EXECUTION',index:'06',title:'追踪一条指令，理解等待与推进。',parent:'sm',default:'scheduler'}
 };
+
+// Keep every inspector chip aligned with its 3D material and model label.
+for (const [id, component] of Object.entries(components)) component.color = colorFor(id);

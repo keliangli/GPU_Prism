@@ -4,21 +4,22 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createSharedScene, createRegistersScene, createWarpScene, applyDeepExperiment } from './deep-scenes.js';
+import { colorFor, ROLE_COLORS } from './palette.js';
 
 // An explanatory model, intentionally not a claim about H20's physical floorplan.
 const COLORS = {
-  board: 0x253e34, boardEdge: 0x162b24, interposer: 0x526457,
-  silicon: 0x1c322a, lime: 0xb8ed6c, mint: 0x77b99a, gold: 0xa2a06b,
-  metal: 0x7d8e82, graphite: 0x283b34, memory: 0x344a40,
+  board: 0x34465f, boardEdge: 0x18273b, interposer: 0x667a96,
+  silicon: 0x202f49, gold: 0xb9a375,
+  metal: 0x9caabc, graphite: 0x26364d,
 };
 
 const LABEL_CSS = `
 .gpu-label-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:3}
-.gpu-label-layer .scene-label{position:absolute;left:0;top:0;display:flex;align-items:center;gap:7px;white-space:nowrap;border:1px solid rgba(162,191,164,.23);border-radius:3px;background:rgba(16,26,24,.82);color:#c6d5c9;padding:6px 9px;font:500 9px/1.25 'JetBrains Mono','SFMono-Regular',Consolas,monospace;letter-spacing:1.05px;pointer-events:auto;cursor:pointer;backdrop-filter:blur(8px);transition:color .18s,border-color .18s,background .18s;box-shadow:0 2px 14px #0002}
-.gpu-label-layer .scene-label::before{content:'';width:4px;height:4px;background:#b8ed6c;border-radius:50%;box-shadow:0 0 7px #b8ed6c66}
-.gpu-label-layer .scene-label::after{content:'+';margin-left:5px;color:#819586;font-size:12px;font-weight:400}
-.gpu-label-layer .scene-label:hover,.gpu-label-layer .scene-label.is-selected{color:#d6f6ad;border-color:#8cb35c;background:rgba(35,52,34,.94)}
-.gpu-webgl-fallback{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#b7cfb8;font:13px/1.9 sans-serif;padding:30px}.gpu-webgl-fallback strong{font-size:19px;color:#d2edb6;font-weight:500;display:block;margin-bottom:10px}
+.gpu-label-layer .scene-label{position:absolute;left:0;top:0;display:flex;align-items:center;gap:7px;white-space:nowrap;border:1px solid color-mix(in srgb,var(--part-color,#91a4bf) 36%,transparent);border-radius:3px;background:rgba(16,25,42,.88);color:#d7e2f2;padding:6px 9px;font:500 9px/1.25 'JetBrains Mono','SFMono-Regular',Consolas,monospace;letter-spacing:1.05px;pointer-events:auto;cursor:pointer;backdrop-filter:blur(8px);transition:color .18s,border-color .18s,background .18s;box-shadow:0 2px 14px #0002}
+.gpu-label-layer .scene-label::before{content:'';width:5px;height:5px;background:var(--part-color,#91a4bf);border-radius:50%;box-shadow:0 0 8px color-mix(in srgb,var(--part-color,#91a4bf) 55%,transparent)}
+.gpu-label-layer .scene-label::after{content:'+';margin-left:5px;color:var(--part-color,#91a4bf);font-size:12px;font-weight:400}
+.gpu-label-layer .scene-label:hover,.gpu-label-layer .scene-label.is-selected{color:#f1f6ff;border-color:var(--part-color,#91a4bf);background:color-mix(in srgb,var(--part-color,#91a4bf) 16%,#142039)}
+.gpu-webgl-fallback{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#bdcce1;font:13px/1.9 sans-serif;padding:30px}.gpu-webgl-fallback strong{font-size:19px;color:#b3cdff;font-weight:500;display:block;margin-bottom:10px}
 `;
 
 export class GPUScene {
@@ -68,11 +69,11 @@ export class GPUScene {
       return;
     }
 
-    this.renderer.setClearColor(0x101a18, 0);
+    this.renderer.setClearColor(0x111b2c, 0);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.25;
+    this.renderer.toneMappingExposure = 1.08;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const canvas = this.renderer.domElement;
@@ -105,8 +106,8 @@ export class GPUScene {
     this.scene.environment = this.environment.texture;
     room.dispose();
     pmrem.dispose();
-    this.scene.add(new THREE.AmbientLight(0xdcebd4, .65));
-    const key = new THREE.DirectionalLight(0xe7f5dd, 3.2);
+    this.scene.add(new THREE.AmbientLight(0xf3f6ff, .62));
+    const key = new THREE.DirectionalLight(0xffffff, 2.8);
     key.position.set(-5, 10, 5);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
@@ -115,30 +116,38 @@ export class GPUScene {
     key.shadow.normalBias = .035;
     key.shadow.radius = 5;
     this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0xb7e7c1, 2.6);
+    const rim = new THREE.DirectionalLight(0xabc7ff, 1.9);
     rim.position.set(4, 5, -7);
     this.scene.add(rim);
-    const front = new THREE.DirectionalLight(0x9db3b0, .85);
+    const front = new THREE.DirectionalLight(0xe1edff, .75);
     front.position.set(1, 3, 9);
     this.scene.add(front);
 
     this.mats = {
-      board: this.material(COLORS.board, .57, .6),
-      boardEdge: this.material(COLORS.boardEdge, .5, .46),
-      interposer: this.material(COLORS.interposer, .68, .35),
-      silicon: this.material(COLORS.silicon, .65, .25),
-      tile: this.material(0x86a76b, .65, .4),
-      tileDark: this.material(0x547552, .7, .4),
-      lime: this.material(COLORS.lime, .52, .35, 0x779f36, .3),
-      gold: this.material(COLORS.gold, .8, .35),
-      metal: this.material(COLORS.metal, .85, .3),
-      graphite: this.material(COLORS.graphite, .75, .4),
-      memory: this.material(COLORS.memory, .72, .37),
-      mint: this.material(COLORS.mint, .6, .4),
-      copper: this.material(0x948778, .8, .4),
-      dark: this.material(0x0c1813, .4, .45),
-      trace: new THREE.LineBasicMaterial({ color: 0x9d9f67, transparent: true, opacity: .5 }),
-      etch: new THREE.LineBasicMaterial({ color: 0xadc495, transparent: true, opacity: .35 }),
+      board: this.material(COLORS.board, .4, .53),
+      boardEdge: this.material(COLORS.boardEdge, .4, .48),
+      interposer: this.material(COLORS.interposer, .48, .46),
+      silicon: this.material(COLORS.silicon, .42, .43),
+      compute: this.material(ROLE_COLORS.compute, .34, .44, 0x294a99, .06),
+      computeDark: this.material(0x385fba, .36, .48),
+      computeLight: this.material(0x9dbbff, .32, .43),
+      tensor: this.material(ROLE_COLORS.tensor, .32, .46, 0x8e3b2c, .05),
+      tensorDark: this.material(0xa54f48, .35, .46),
+      memory: this.material(ROLE_COLORS.memory, .34, .44, 0x175a72, .07),
+      memoryDark: this.material(0x277b98, .4, .46),
+      lsu: this.material(colorFor('lsu'), .34, .44, 0x175a72, .05),
+      register: this.material(ROLE_COLORS.registers, .38, .46, 0x805518, .04),
+      registerLight: this.material(0xffd89a, .35, .47),
+      control: this.material(ROLE_COLORS.control, .34, .46, 0x533382, .05),
+      interconnect: this.material(ROLE_COLORS.interconnect, .35, .45, 0x743e81, .05),
+      transfer: this.material(ROLE_COLORS.transfer, .34, .45, 0x1b685d, .05),
+      gold: this.material(COLORS.gold, .65, .4),
+      metal: this.material(COLORS.metal, .65, .39),
+      graphite: this.material(COLORS.graphite, .42, .5),
+      copper: this.material(0xb99581, .6, .44),
+      dark: this.material(0x0e1828, .32, .51),
+      trace: new THREE.LineBasicMaterial({ color: 0x9caec9, transparent: true, opacity: .42 }),
+      etch: new THREE.LineBasicMaterial({ color: 0xc7ddf4, transparent: true, opacity: .4 }),
     };
     this.materials.add(this.mats.trace);
     this.materials.add(this.mats.etch);
@@ -152,7 +161,7 @@ export class GPUScene {
     createWarpScene(this);
     this.batchStaticGeometry();
     applyDeepExperiment(this, this.experiment);
-    this.selectionBox = new THREE.Box3Helper(new THREE.Box3(), 0xbced7a);
+    this.selectionBox = new THREE.Box3Helper(new THREE.Box3(), colorFor(this.selected));
     this.selectionBox.material.transparent = true;
     this.selectionBox.material.opacity = .55;
     this.selectionBox.material.depthTest = false;
@@ -240,6 +249,7 @@ export class GPUScene {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'scene-label';
+    el.style.setProperty('--part-color', colorFor(id));
     el.textContent = text;
     el.setAttribute('aria-label', `查看 ${text} 组件`);
     el.addEventListener('pointerdown', (event) => event.stopPropagation());
@@ -253,18 +263,18 @@ export class GPUScene {
   }
 
   createGround() {
-    const groundMat = new THREE.ShadowMaterial({ color: 0x020b06, opacity: .32 });
+    const groundMat = new THREE.ShadowMaterial({ color: 0x020714, opacity: .32 });
     this.materials.add(groundMat);
     const floor = this.mesh(new THREE.PlaneGeometry(200, 200), groundMat, this.scene, 0, -.31, 0);
     floor.rotation.x = -Math.PI / 2;
     floor.castShadow = false;
-    const grid = new THREE.GridHelper(26, 40, 0x3d5747, 0x304039);
+    const grid = new THREE.GridHelper(26, 40, 0x526c98, 0x33445f);
     grid.position.y = -.305;
     grid.material.transparent = true;
     grid.material.opacity = .12;
     this.scene.add(grid);
     this.groundGrid = grid;
-    const ring = new THREE.Mesh(new THREE.RingGeometry(5.7, 5.712, 128), new THREE.MeshBasicMaterial({ color: 0x57664e, transparent: true, opacity: .16, side: THREE.DoubleSide }));
+    const ring = new THREE.Mesh(new THREE.RingGeometry(5.7, 5.712, 128), new THREE.MeshBasicMaterial({ color: 0x607aab, transparent: true, opacity: .16, side: THREE.DoubleSide }));
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = -.3;
     this.scene.add(ring);
@@ -327,17 +337,17 @@ export class GPUScene {
     this.targets.package.gpu = gpu;
     this.box(gpu, 3.25, .06, 3.94, 0, .035, 0, this.mats.metal, 'gpu', .04);
     this.box(gpu, 3.14, .105, 3.83, 0, .111, 0, this.mats.silicon, 'gpu', .026);
-    this.box(gpu, 2.96, .012, 3.65, 0, .17, 0, this.mats.tileDark, 'gpu', .015);
+    this.box(gpu, 2.96, .012, 3.65, 0, .17, 0, this.mats.computeDark, 'gpu', .015);
     for (let col = 0; col < 6; col++) for (let row = 0; row < 8; row++) {
       const x = -1.208 + col * .484;
       const z = -1.57 + row * .448;
-      this.box(gpu, .432, .035, .386, x, .195, z, (row + col) % 5 === 0 ? this.mats.lime : this.mats.tile, 'gpu', .009);
+      this.box(gpu, .432, .035, .386, x, .195, z, (row + col) % 5 === 0 ? this.mats.tensor : this.mats.compute, 'gpu', .009);
       for (let line = 0; line < 4; line++) {
         this.line(gpu, [[x - .175, .215, z - .125 + line * .079], [x + .175, .215, z - .125 + line * .079]], this.mats.etch);
       }
     }
     for (let i = 0; i < 7; i++) {
-      this.box(gpu, .026, .01, 3.58, -1.45 + i * .484, .216, 0, this.mats.lime, 'gpu', 0);
+      this.box(gpu, .026, .01, 3.58, -1.45 + i * .484, .216, 0, this.mats.computeLight, 'gpu', 0);
     }
     this.explosion(gpu, .75);
     this.label('package', gpu, 'gpu', 'HOPPER GPU', [0, .38, -.25], [0, -7]);
@@ -348,7 +358,7 @@ export class GPUScene {
       const memory = this.group(memories, 'hbm', null, [x, .25, z]);
       this.box(memory, .83, .06, 1.21, 0, 0, 0, this.mats.gold, 'hbm', .025);
       for (let layer = 0; layer < 5; layer++) {
-        this.box(memory, .75, .048, 1.105, 0, .057 + layer * .052, 0, layer === 4 ? this.mats.memory : this.mats.graphite, 'hbm', .012);
+        this.box(memory, .75, .048, 1.105, 0, .057 + layer * .052, 0, layer === 4 ? this.mats.memory : this.mats.memoryDark, 'hbm', .012);
         this.box(memory, .752, .009, 1.11, 0, .083 + layer * .052, 0, this.mats.metal, 'hbm', .008);
       }
       this.box(memory, .67, .018, 1.02, 0, .32, 0, this.mats.memory, 'hbm', .02);
@@ -359,13 +369,13 @@ export class GPUScene {
     this.label('package', memories, 'hbm', 'HBM3 MEMORY', [2.11, .66, .18], [21, -2]);
 
     const nvlink = this.group(root, 'nvlink', 'package', [0, .15, -2.84]);
-    this.box(nvlink, 3.18, .16, .29, 0, 0, 0, this.mats.graphite, 'nvlink', .018);
+    this.box(nvlink, 3.18, .16, .29, 0, 0, 0, this.mats.interconnect, 'nvlink', .018);
     for (let i = 0; i < 40; i++) this.box(nvlink, .045, .04, .21, -1.48 + i * .076, .1, -.025, this.mats.gold, 'nvlink', .003);
     this.box(nvlink, 3.25, .035, .048, 0, .13, .12, this.mats.metal, 'nvlink', .004);
     this.label('package', nvlink, 'nvlink', 'NVLINK 4.0', [0, .24, -.12], [10, -25]);
 
     const pcie = this.group(root, 'pcie', 'package', [0, .06, 3.1]);
-    this.box(pcie, 3.6, .085, .29, 0, 0, 0, this.mats.boardEdge, 'pcie', .012);
+    this.box(pcie, 3.6, .085, .29, 0, 0, 0, this.mats.interconnect, 'pcie', .012);
     for (let i = 0; i < 44; i++) {
       if (i === 12 || i === 13) continue;
       this.box(pcie, .051, .018, .285, -1.72 + i * .08, .055, .025, this.mats.gold, 'pcie', .003);
@@ -394,22 +404,22 @@ export class GPUScene {
       for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
         const sm = this.group(gpc, 'sm', null, [-.64 + i * .426, .1, -.38 + j * .75]);
         this.targets.die.sm ??= sm;
-        this.box(sm, .36, .1, .6, 0, 0, 0, this.mats.tile, 'sm', .015);
-        this.box(sm, .13, .015, .48, -.075, .06, 0, this.mats.lime, 'sm', .005);
-        for (let k = 0; k < 5; k++) this.box(sm, .13, .012, .04, .09, .06, -.21 + k * .1, this.mats.mint, 'sm', 0);
+        this.box(sm, .36, .1, .6, 0, 0, 0, this.mats.compute, 'sm', .015);
+        this.box(sm, .13, .015, .48, -.075, .06, 0, this.mats.tensor, 'sm', .005);
+        for (let k = 0; k < 5; k++) this.box(sm, .13, .012, .04, .09, .06, -.21 + k * .1, this.mats.register, 'sm', 0);
       }
       this.box(gpc, 1.52, .02, .065, 0, .12, .708, this.mats.gold, 'gpc', .006);
     }
     this.explosion(gpcs, .9);
     const l2 = this.group(root, 'l2', 'die', [0, .28, 0]);
-    this.box(l2, 6.3, .12, .27, 0, 0, 0, this.mats.lime, 'l2', .02);
+    this.box(l2, 6.3, .12, .27, 0, 0, 0, this.mats.register, 'l2', .02);
     for (let i = 0; i < 36; i++) this.box(l2, .012, .015, .19, -3 + i * .171, .07, 0, this.mats.silicon, 'l2', 0);
     this.explosion(l2, .48);
     const memory = this.group(root, 'hbm', 'die');
     for (const z of [-2.25, 2.25]) {
       for (let i = 0; i < 12; i++) {
         const x = -2.8 + i * .51;
-        this.box(memory, .43, .12, .28, x, .28, z, this.mats.mint, 'hbm', .008);
+        this.box(memory, .43, .12, .28, x, .28, z, this.mats.memory, 'hbm', .008);
         for (let j = 0; j < 3; j++) this.box(memory, .31, .013, .026, x, .348, z - .07 + j * .07, this.mats.metal, 'hbm', 0);
       }
     }
@@ -438,29 +448,29 @@ export class GPUScene {
     for (let partition = 0; partition < 4; partition++) {
       const x = -2.3 + partition * 1.53;
       this.box(base, 1.39, .04, 3.98, x, .212, -.25, this.mats.interposer, 'sm', .018);
-      this.box(scheduler, 1.23, .15, .36, x, .32, -2.03, this.mats.mint, 'scheduler', .018);
+      this.box(scheduler, 1.23, .15, .36, x, .32, -2.03, this.mats.control, 'scheduler', .018);
       for (let i = 0; i < 8; i++) this.box(scheduler, .09, .012, .23, x - .49 + i * .14, .4, -2.03, this.mats.metal, 'scheduler', .004);
       this.box(registers, 1.23, .12, .76, x, .31, -1.35, this.mats.graphite, 'registers', .015);
       for (let row = 0; row < 3; row++) for (let col = 0; col < 8; col++) {
-        this.box(registers, .106, .033, .16, x - .49 + col * .14, .387, -1.58 + row * .225, (row + col) % 3 ? this.mats.mint : this.mats.gold, 'registers', .004);
+        this.box(registers, .106, .033, .16, x - .49 + col * .14, .387, -1.58 + row * .225, (row + col) % 3 ? this.mats.register : this.mats.registerLight, 'registers', .004);
       }
       for (let col = 0; col < 4; col++) for (let row = 0; row < 4; row++) {
-        this.box(cuda, .232, .12, .25, x - .432 + col * .288, .31, -.67 + row * .33, (row + col) % 4 === 0 ? this.mats.lime : this.mats.tile, 'cuda', .01);
+        this.box(cuda, .232, .12, .25, x - .432 + col * .288, .31, -.67 + row * .33, (row + col) % 4 === 0 ? this.mats.computeLight : this.mats.compute, 'cuda', .01);
         this.box(cuda, .16, .01, .018, x - .432 + col * .288, .377, -.67 + row * .33, this.mats.metal, 'cuda', 0);
       }
       const core = this.group(tensor, 'tensor', null, [x, .34, .9]);
-      this.box(core, 1.2, .18, .62, 0, 0, 0, this.mats.lime, 'tensor', .018);
-      this.box(core, .96, .015, .44, 0, .099, 0, this.mats.tileDark, 'tensor', .01);
-      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) this.box(core, .17, .017, .16, -.32 + i * .215, .115, -.1 + j * .2, this.mats.lime, 'tensor', .003);
-      this.box(lsu, 1.2, .1, .34, x, .31, 1.5, this.mats.mint, 'lsu', .012);
+      this.box(core, 1.2, .18, .62, 0, 0, 0, this.mats.tensor, 'tensor', .018);
+      this.box(core, .96, .015, .44, 0, .099, 0, this.mats.tensorDark, 'tensor', .01);
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) this.box(core, .17, .017, .16, -.32 + i * .215, .115, -.1 + j * .2, this.mats.tensor, 'tensor', .003);
+      this.box(lsu, 1.2, .1, .34, x, .31, 1.5, this.mats.lsu, 'lsu', .012);
       for (let i = 0; i < 8; i++) this.box(lsu, .09, .017, .23, x - .49 + i * .14, .37, 1.5, this.mats.metal, 'lsu', .003);
       this.line(base, [[x, .232, -1.8], [x, .232, 1.9]], this.mats.etch);
     }
-    this.box(shared, 4.78, .15, .46, -.04, .3, 2.13, this.mats.mint, 'shared', .018);
+    this.box(shared, 4.78, .15, .46, -.04, .3, 2.13, this.mats.memory, 'shared', .018);
     for (let i = 0; i < 40; i++) this.box(shared, .015, .016, .34, -2.3 + i * .116, .384, 2.13, this.mats.silicon, 'shared', 0);
-    this.box(tma, .58, .19, .58, 0, 0, 0, this.mats.lime, 'tma', .018);
+    this.box(tma, .58, .19, .58, 0, 0, 0, this.mats.transfer, 'tma', .018);
     for (let i = 0; i < 3; i++) this.box(tma, .36, .018, .055, 0, .106, -.14 + i * .14, this.mats.graphite, 'tma', .003);
-    this.box(barrier, .48, .17, .58, 0, 0, 0, this.mats.gold, 'barrier', .018);
+    this.box(barrier, .48, .17, .58, 0, 0, 0, this.mats.interconnect, 'barrier', .018);
     for (let i = 0; i < 3; i++) this.box(barrier, .05, .018, .36, -.12 + i * .12, .096, 0, this.mats.graphite, 'barrier', .003);
     this.explosion(cuda, .65);
     this.explosion(tensor, 1.1);
@@ -487,11 +497,11 @@ export class GPUScene {
     group.visible = false;
     parent.add(group);
     this.flowGroups.push({ group, level });
-    const material = new THREE.LineBasicMaterial({ color: 0xb6ee78, transparent: true, opacity: .25 });
+    const material = new THREE.LineBasicMaterial({ color: 0x9bdce9, transparent: true, opacity: .36 });
     this.materials.add(material);
     this.line(group, points.map(p => p.toArray()), material);
     const curve = new THREE.LineCurve3(points[0], points[points.length - 1]);
-    const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xdcffa4 });
+    const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xe7faff });
     this.materials.add(dotMaterial);
     for (let i = 0; i < count; i++) {
       const dot = this.mesh(new THREE.SphereGeometry(.034, 8, 6), dotMaterial, group);
@@ -591,7 +601,10 @@ export class GPUScene {
   setSelected(id) {
     this.selected = id;
     for (const label of this.labels) label.el.classList.toggle('is-selected', label.id === id);
-    if (this.selectionBox) this.selectionBox.visible = id !== 'gpu' && !!this.targets[this.level]?.[id];
+    if (this.selectionBox) {
+      this.selectionBox.visible = id !== 'gpu' && !!this.targets[this.level]?.[id];
+      this.selectionBox.material.color.set(colorFor(id));
+    }
   }
 
   setExploded(value) { this.exploded = !!value; }
