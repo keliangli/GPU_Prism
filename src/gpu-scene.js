@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { createSharedScene, createRegistersScene, createWarpScene, applyDeepExperiment } from './deep-scenes.js';
 
 // An explanatory model, intentionally not a claim about H20's physical floorplan.
 const COLORS = {
@@ -31,6 +32,8 @@ export class GPUScene {
     this.labelsVisible = true;
     this.dataFlow = false;
     this.autoRotate = false;
+    this.lastBank = 0;
+    this.experiment = { bankCounts: Array(32).fill(0), selectedBank: null, stage: null, activeWarp: 0, registerUsage: 64, residentWarps: 32 };
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.groups = {};
     this.targets = {};
@@ -144,7 +147,11 @@ export class GPUScene {
     this.createPackage();
     this.createDie();
     this.createSM();
+    createSharedScene(this);
+    createRegistersScene(this);
+    createWarpScene(this);
     this.batchStaticGeometry();
+    applyDeepExperiment(this, this.experiment);
     this.selectionBox = new THREE.Box3Helper(new THREE.Box3(), 0xbced7a);
     this.selectionBox.material.transparent = true;
     this.selectionBox.material.opacity = .55;
@@ -159,7 +166,14 @@ export class GPUScene {
       this.downPoint = null;
       if (event.button !== 0 || !point || Math.hypot(event.clientX - point.x, event.clientY - point.y) > 5) return;
       const id = this.pick(event);
-      if (id) { this.setSelected(id); this.onSelect(id); }
+      if (id) {
+        if (id === 'bank' && Number.isInteger(this.pickedBank)) {
+          this.lastBank = this.pickedBank;
+          this.targets.shared.bank = this.bankTiles[this.lastBank];
+        }
+        this.setSelected(id);
+        this.onSelect(id);
+      }
     };
     this.pointerMove = (event) => {
       const id = this.pick(event);
@@ -413,37 +427,58 @@ export class GPUScene {
     this.box(base, 6.65, .045, 5.35, 0, 0, 0, this.mats.metal, 'sm', .035);
     this.box(base, 6.5, .13, 5.2, 0, .09, 0, this.mats.silicon, 'sm', .025);
     this.box(base, 6.24, .025, 4.94, 0, .17, 0, this.mats.board, 'sm', .015);
-    const cudaGroup = this.group(root, 'cuda', 'sm');
-    const tensorGroup = this.group(root, 'tensor', 'sm');
-    const schedulerGroup = this.group(root, 'scheduler', 'sm');
+    const cuda = this.group(root, 'cuda', 'sm');
+    const tensor = this.group(root, 'tensor', 'sm');
+    const scheduler = this.group(root, 'scheduler', 'sm');
+    const registers = this.group(root, 'registers', 'sm');
     const shared = this.group(root, 'shared', 'sm');
+    const lsu = this.group(root, 'lsu', 'sm');
+    const tma = this.group(root, 'tma', 'sm', [2.7, .3, 2.13]);
+    const barrier = this.group(root, 'barrier', 'sm', [-2.78, .3, 2.13]);
     for (let partition = 0; partition < 4; partition++) {
       const x = -2.3 + partition * 1.53;
-      this.box(base, 1.39, .04, 3.92, x, .212, -.17, this.mats.interposer, 'sm', .018);
-      this.box(schedulerGroup, 1.23, .15, .39, x, .32, -1.82, this.mats.mint, 'scheduler', .018);
-      for (let i = 0; i < 8; i++) this.box(schedulerGroup, .09, .012, .26, x - .49 + i * .14, .4, -1.82, this.mats.metal, 'scheduler', .004);
-      for (let col = 0; col < 4; col++) for (let row = 0; row < 6; row++) {
-        this.box(cudaGroup, .232, .12, .25, x - .432 + col * .288, .31, -1.2 + row * .33, (row + col) % 4 === 0 ? this.mats.lime : this.mats.tile, 'cuda', .01);
-        this.box(cudaGroup, .16, .01, .018, x - .432 + col * .288, .377, -1.2 + row * .33, this.mats.metal, 'cuda', 0);
+      this.box(base, 1.39, .04, 3.98, x, .212, -.25, this.mats.interposer, 'sm', .018);
+      this.box(scheduler, 1.23, .15, .36, x, .32, -2.03, this.mats.mint, 'scheduler', .018);
+      for (let i = 0; i < 8; i++) this.box(scheduler, .09, .012, .23, x - .49 + i * .14, .4, -2.03, this.mats.metal, 'scheduler', .004);
+      this.box(registers, 1.23, .12, .76, x, .31, -1.35, this.mats.graphite, 'registers', .015);
+      for (let row = 0; row < 3; row++) for (let col = 0; col < 8; col++) {
+        this.box(registers, .106, .033, .16, x - .49 + col * .14, .387, -1.58 + row * .225, (row + col) % 3 ? this.mats.mint : this.mats.gold, 'registers', .004);
       }
-      const tensor = this.group(tensorGroup, 'tensor', null, [x, .34, 1.11]);
-      this.box(tensor, 1.2, .18, .69, 0, 0, 0, this.mats.lime, 'tensor', .018);
-      this.box(tensor, .96, .015, .47, 0, .099, 0, this.mats.tileDark, 'tensor', .01);
-      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) this.box(tensor, .17, .017, .16, -.32 + i * .215, .115, -.1 + j * .2, this.mats.lime, 'tensor', .003);
-      this.box(shared, 1.2, .09, .28, x, .29, 1.72, this.mats.graphite, 'shared', .012);
-      for (let i = 0; i < 13; i++) this.box(shared, .045, .018, .19, x - .51 + i * .085, .346, 1.72, this.mats.metal, 'shared', .003);
+      for (let col = 0; col < 4; col++) for (let row = 0; row < 4; row++) {
+        this.box(cuda, .232, .12, .25, x - .432 + col * .288, .31, -.67 + row * .33, (row + col) % 4 === 0 ? this.mats.lime : this.mats.tile, 'cuda', .01);
+        this.box(cuda, .16, .01, .018, x - .432 + col * .288, .377, -.67 + row * .33, this.mats.metal, 'cuda', 0);
+      }
+      const core = this.group(tensor, 'tensor', null, [x, .34, .9]);
+      this.box(core, 1.2, .18, .62, 0, 0, 0, this.mats.lime, 'tensor', .018);
+      this.box(core, .96, .015, .44, 0, .099, 0, this.mats.tileDark, 'tensor', .01);
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) this.box(core, .17, .017, .16, -.32 + i * .215, .115, -.1 + j * .2, this.mats.lime, 'tensor', .003);
+      this.box(lsu, 1.2, .1, .34, x, .31, 1.5, this.mats.mint, 'lsu', .012);
+      for (let i = 0; i < 8; i++) this.box(lsu, .09, .017, .23, x - .49 + i * .14, .37, 1.5, this.mats.metal, 'lsu', .003);
+      this.line(base, [[x, .232, -1.8], [x, .232, 1.9]], this.mats.etch);
     }
-    this.box(shared, 5.98, .15, .37, 0, .3, 2.22, this.mats.mint, 'shared', .018);
-    for (let i = 0; i < 52; i++) this.box(shared, .015, .016, .25, -2.85 + i * .112, .384, 2.22, this.mats.silicon, 'shared', 0);
-    this.explosion(cudaGroup, .65);
-    this.explosion(tensorGroup, 1.1);
-    this.explosion(schedulerGroup, .4);
+    this.box(shared, 4.78, .15, .46, -.04, .3, 2.13, this.mats.mint, 'shared', .018);
+    for (let i = 0; i < 40; i++) this.box(shared, .015, .016, .34, -2.3 + i * .116, .384, 2.13, this.mats.silicon, 'shared', 0);
+    this.box(tma, .58, .19, .58, 0, 0, 0, this.mats.lime, 'tma', .018);
+    for (let i = 0; i < 3; i++) this.box(tma, .36, .018, .055, 0, .106, -.14 + i * .14, this.mats.graphite, 'tma', .003);
+    this.box(barrier, .48, .17, .58, 0, 0, 0, this.mats.gold, 'barrier', .018);
+    for (let i = 0; i < 3; i++) this.box(barrier, .05, .018, .36, -.12 + i * .12, .096, 0, this.mats.graphite, 'barrier', .003);
+    this.explosion(cuda, .65);
+    this.explosion(tensor, 1.1);
+    this.explosion(scheduler, .4);
+    this.explosion(registers, .8);
     this.explosion(shared, .25);
-    this.label('sm', cudaGroup, 'cuda', 'CUDA CORES', [-1.5, .54, -.7], [-12, -12]);
-    this.label('sm', tensorGroup, 'tensor', 'TENSOR CORES', [2.3, .55, 1.11], [37, 5]);
-    this.label('sm', schedulerGroup, 'scheduler', 'WARP SCHEDULERS', [1.53, .49, -1.82], [0, -30]);
-    this.label('sm', shared, 'shared', 'SHARED MEMORY / L1', [-1, .47, 2.22], [0, 35]);
-    for (let i = 0; i < 4; i++) this.addFlow(root, 'sm', [new THREE.Vector3(-2.3 + i * 1.53, .6, -1.7), new THREE.Vector3(-2.3 + i * 1.53, .6, 2.2)], 4);
+    this.explosion(lsu, .45);
+    this.explosion(tma, .6);
+    this.explosion(barrier, .45);
+    this.label('sm', cuda, 'cuda', 'CUDA CORES', [-1.5, .54, -.2], [-24, -3]);
+    this.label('sm', tensor, 'tensor', 'TENSOR CORES', [2.3, .55, .9], [41, 10]);
+    this.label('sm', scheduler, 'scheduler', 'SCHEDULERS ×4', [1.53, .49, -2.03], [38, -27]);
+    this.label('sm', registers, 'registers', 'REGISTER FILES', [-1.5, .51, -1.35], [-35, -32]);
+    this.label('sm', shared, 'shared', 'SHARED / L1', [-.5, .47, 2.13], [1, 42]);
+    this.label('sm', lsu, 'lsu', 'LSU', [-1.5, .45, 1.5], [-42, 9]);
+    this.label('sm', tma, 'tma', 'TMA', [0, .27, 0], [28, 30]);
+    this.label('sm', barrier, 'barrier', 'BARRIER', [0, .25, 0], [-53, 23]);
+    for (let i = 0; i < 4; i++) this.addFlow(root, 'sm', [new THREE.Vector3(-2.3 + i * 1.53, .6, -1.9), new THREE.Vector3(-2.3 + i * 1.53, .6, 2.1)], 4);
   }
 
   addFlow(parent, level, points, count) {
@@ -522,6 +557,7 @@ export class GPUScene {
 
   pick(event) {
     if (!this.renderer || !this.groups[this.level]) return null;
+    this.pickedBank = null;
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(this.mouse, this.camera);
@@ -529,7 +565,13 @@ export class GPUScene {
     for (const intersection of intersections) {
       let obj = intersection.object;
       if (!(obj instanceof THREE.Mesh)) continue;
+      let bankNode = obj;
+      while (bankNode && bankNode !== this.scene) {
+        if (Number.isInteger(bankNode.userData.bank)) { this.pickedBank = bankNode.userData.bank; break; }
+        bankNode = bankNode.parent;
+      }
       while (obj && obj !== this.scene) {
+        if (obj === this.groups[this.level]) break;
         if (obj.userData.id && obj.userData.id !== 'package' && obj.userData.id !== 'die') return obj.userData.id;
         obj = obj.parent;
       }
@@ -538,11 +580,11 @@ export class GPUScene {
   }
 
   setLevel(level) {
-    if (!['package', 'die', 'sm'].includes(level)) return;
+    if (!['package', 'die', 'sm', 'shared', 'registers', 'warp'].includes(level)) return;
     this.level = level;
     if (!this.renderer) return;
     for (const [name, group] of Object.entries(this.groups)) group.visible = name === level;
-    this.setSelected(level === 'package' ? 'gpu' : level === 'die' ? 'gpc' : 'tensor');
+    this.setSelected(({ package: 'gpu', die: 'gpc', sm: 'tensor', shared: 'banks', registers: 'registerFile', warp: 'scheduler' })[level]);
     this.updateLabels();
   }
 
@@ -559,6 +601,12 @@ export class GPUScene {
     if (this.controls) this.controls.autoRotate = this.autoRotate && !this.reducedMotion;
   }
   setDataFlow(value) { this.dataFlow = !!value; }
+
+  setExperiment(data = {}) {
+    this.experiment = { ...this.experiment, ...data };
+    if (!this.renderer) return;
+    applyDeepExperiment(this, this.experiment);
+  }
 
   setView(view = 'iso') {
     if (!this.camera) return;
@@ -603,6 +651,10 @@ export class GPUScene {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
     this.scene.updateMatrixWorld();
+    const occupied = [];
+    const safeTop = Math.min(110, height * .23);
+    const safeBottom = Math.max(safeTop + 30, height - 55);
+    const intersects = (a, b) => a.left < b.right + 5 && a.right > b.left - 5 && a.top < b.bottom + 5 && a.bottom > b.top - 5;
     for (const label of this.labels) {
       const visible = label.level === this.level && this.labelsVisible;
       label.el.style.display = visible ? 'flex' : 'none';
@@ -613,8 +665,21 @@ export class GPUScene {
       const x = (this.tempVector.x * .5 + .5) * width + label.offset[0];
       const y = (-this.tempVector.y * .5 + .5) * height + label.offset[1];
       const boxWidth = label.el.offsetWidth;
-      const clampedX = Math.max(boxWidth / 2 + 8, Math.min(width - boxWidth / 2 - 8, x));
-      label.el.style.transform = `translate(${clampedX}px,${Math.max(20, Math.min(height - 20, y))}px) translate(-50%,-50%)`;
+      const boxHeight = label.el.offsetHeight || 26;
+      const clampedX = THREE.MathUtils.clamp(x, boxWidth / 2 + 8, Math.max(boxWidth / 2 + 8, width - boxWidth / 2 - 8));
+      const clampedY = THREE.MathUtils.clamp(y, safeTop + boxHeight / 2, safeBottom - boxHeight / 2);
+      let best;
+      // Stable alternatives retain each component's anchor, even on narrow screens.
+      for (let step = 0; step <= 10; step++) for (const sign of step ? [-1, 1] : [0]) for (const dx of [0, -24, 24, -48, 48]) {
+        const centerX = THREE.MathUtils.clamp(clampedX + dx, boxWidth / 2 + 8, Math.max(boxWidth / 2 + 8, width - boxWidth / 2 - 8));
+        const centerY = THREE.MathUtils.clamp(clampedY + sign * step * 22, safeTop + boxHeight / 2, safeBottom - boxHeight / 2);
+        const rect = { left: centerX - boxWidth / 2, right: centerX + boxWidth / 2, top: centerY - boxHeight / 2, bottom: centerY + boxHeight / 2 };
+        const collisions = occupied.filter(other => intersects(rect, other)).length;
+        const score = collisions * 100000 + (centerX - clampedX) ** 2 * 1.4 + (centerY - clampedY) ** 2;
+        if (!best || score < best.score) best = { ...rect, centerX, centerY, score };
+      }
+      occupied.push(best);
+      label.el.style.transform = `translate(${best.centerX}px,${best.centerY}px) translate(-50%,-50%)`;
       label.el.style.opacity = this.tempVector.z > 1 || this.tempVector.z < -1 ? '0' : '1';
     }
   }
@@ -664,6 +729,7 @@ export class GPUScene {
     });
     for (const geometry of this.geometries) geometry.dispose();
     for (const material of this.materials) material.dispose();
+    for (const texture of this.deepTextures || []) texture.dispose();
     this.environment?.dispose();
     this.renderer?.dispose();
     this.labelLayer.remove();
