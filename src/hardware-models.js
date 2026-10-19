@@ -49,5 +49,7 @@ export const INITIAL_WARPS = [
 
 export function advanceWarp(stageIndex, ready) {
   if (stageIndex === 1 && !ready) return { stageIndex:1, stalled:true, complete:false };
-  return { stageIndex: Math.min(6, stageIndex + 1), stalled:false, complete:stageIndex >= 5 };
+  const last = WARP_STAGES.length - 1;
+  // complete 只表示“已经在最后一个阶段”，进入 writeback 本身还不算完成。
+  return { stageIndex: Math.min(last, stageIndex + 1), stalled:false, complete: stageIndex >= last };
 }

@@ -15,7 +15,7 @@ export class DeepLab {
   selectBank(index) { this.selectedBank=Number.isInteger(index)?index:null;this.render();this.emit(); }
   emit() {
     if(this.level==='shared')this.onExperiment({...sharedAccess(this.stride,this.offset),selectedBank:this.selectedBank});
-    if(this.level==='registers')this.onExperiment({registerUsage:this.registers,residentWarps:registerBudget(this.registers,this.threads,this.shared).residentWarps});
+    if(this.level==='registers')this.onExperiment({registerUsage:this.registers});
     if(this.level==='warp')this.onExperiment({stage:WARP_STAGES[this.stageIndex].id,activeWarp:this.activeWarp,stalled:this.stalled});
   }
   render() {
@@ -23,8 +23,9 @@ export class DeepLab {
     this.container.dataset.labKind=this.level;
     this.container.innerHTML=this.level==='shared'?this.sharedView():this.level==='registers'?this.registerView():this.level==='warp'?this.warpView():this.gatewayView();
     this.container.onclick=e=>this.click(e);
-    this.container.oninput=e=>this.input(e);
-    this.container.onchange=e=>this.input(e);
+    // 按控件类型分流：range 用 input 实时预览，select 用 change 提交，避免同一次交互被两个事件重复处理。
+    this.container.oninput=e=>{if(e.target.tagName!=='SELECT')this.input(e);};
+    this.container.onchange=e=>{if(e.target.tagName==='SELECT')this.input(e);};
   }
   heading(kicker,title,text) {return `<div class="lab-heading"><div><span class="small-kicker">${kicker}</span><h2>${title}</h2><p>${text}</p></div><span class="lab-reference">${icon('info',13)} 可交互原理演示</span></div>`;}
   gatewayView() {

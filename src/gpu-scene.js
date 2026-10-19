@@ -34,7 +34,7 @@ export class GPUScene {
     this.dataFlow = false;
     this.autoRotate = false;
     this.lastBank = 0;
-    this.experiment = { bankCounts: Array(32).fill(0), selectedBank: null, stage: null, activeWarp: 0, registerUsage: 64, residentWarps: 32 };
+    this.experiment = { bankCounts: Array(32).fill(0), selectedBank: null, stage: null, activeWarp: 0, registerUsage: 64 };
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.groups = {};
     this.targets = {};
@@ -47,6 +47,8 @@ export class GPUScene {
     this.disposed = false;
     this.mouse = new THREE.Vector2();
     this.raycaster = new THREE.Raycaster();
+    this.hoverFrame = null;
+    this.hoverPoint = null;
     this.clock = new THREE.Clock();
     this.tempVector = new THREE.Vector3();
     this.hovered = null;
@@ -185,11 +187,26 @@ export class GPUScene {
       }
     };
     this.pointerMove = (event) => {
-      const id = this.pick(event);
-      canvas.style.cursor = id ? 'pointer' : 'grab';
-      if (id !== this.hovered) { this.hovered = id; this.onHover(id); }
+      if (this.downPoint) return; // 拖动旋转/平移期间不做拾取，避免无效 raycast
+      this.hoverPoint = { clientX: event.clientX, clientY: event.clientY };
+      if (this.hoverFrame !== null) return;
+      // 拾取合并到下一帧执行，把高频 pointermove 收敛为每帧一次 raycast。
+      this.hoverFrame = requestAnimationFrame(() => {
+        this.hoverFrame = null;
+        const at = this.hoverPoint;
+        this.hoverPoint = null;
+        const id = at ? this.pick(at) : null;
+        canvas.style.cursor = id ? 'pointer' : 'grab';
+        if (id !== this.hovered) { this.hovered = id; this.onHover(id); }
+      });
     };
-    this.pointerLeave = () => { this.hovered = null; this.onHover(null); canvas.style.cursor = 'grab'; };
+    this.pointerLeave = () => {
+      this.hoverPoint = null;
+      if (this.hoverFrame !== null) { cancelAnimationFrame(this.hoverFrame); this.hoverFrame = null; }
+      this.hovered = null;
+      this.onHover(null);
+      canvas.style.cursor = 'grab';
+    };
     canvas.addEventListener('pointerdown', this.pointerDown);
     canvas.addEventListener('pointerup', this.pointerUp);
     canvas.addEventListener('pointermove', this.pointerMove);
@@ -589,12 +606,13 @@ export class GPUScene {
     return null;
   }
 
-  setLevel(level) {
+  setLevel(level, defaultId) {
     if (!['package', 'die', 'sm', 'shared', 'registers', 'warp'].includes(level)) return;
     this.level = level;
     if (!this.renderer) return;
     for (const [name, group] of Object.entries(this.groups)) group.visible = name === level;
-    this.setSelected(({ package: 'gpu', die: 'gpc', sm: 'tensor', shared: 'banks', registers: 'registerFile', warp: 'scheduler' })[level]);
+    // 默认选中项由调用方（data.js 的 levels[].default）给出，避免在此重复维护映射。
+    if (defaultId) this.setSelected(defaultId);
     this.updateLabels();
   }
 
@@ -656,6 +674,7 @@ export class GPUScene {
     this.camera.bottom = -vertical / 2;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+    for (const label of this.labels) label.size = null;
     this.updateLabels();
   }
 
@@ -668,17 +687,22 @@ export class GPUScene {
     const safeTop = Math.min(110, height * .23);
     const safeBottom = Math.max(safeTop + 30, height - 55);
     const intersects = (a, b) => a.left < b.right + 5 && a.right > b.left - 5 && a.top < b.bottom + 5 && a.bottom > b.top - 5;
+    // 先统一写入可见性，再统一读取尺寸：避免“写 display → 读 offsetWidth”逐标签交替触发同步布局。
     for (const label of this.labels) {
-      const visible = label.level === this.level && this.labelsVisible;
-      label.el.style.display = visible ? 'flex' : 'none';
-      if (!visible) continue;
+      label.visible = label.level === this.level && this.labelsVisible;
+      label.el.style.display = label.visible ? 'flex' : 'none';
+    }
+    for (const label of this.labels) {
+      if (!label.visible) continue;
+      // 标签内容固定且不换行，尺寸只在容器尺寸变化时失效重测（见 resize）。
+      label.size ??= { width: label.el.offsetWidth, height: label.el.offsetHeight || 26 };
       this.tempVector.copy(label.position);
       label.anchor.localToWorld(this.tempVector);
       this.tempVector.project(this.camera);
       const x = (this.tempVector.x * .5 + .5) * width + label.offset[0];
       const y = (-this.tempVector.y * .5 + .5) * height + label.offset[1];
-      const boxWidth = label.el.offsetWidth;
-      const boxHeight = label.el.offsetHeight || 26;
+      const boxWidth = label.size.width;
+      const boxHeight = label.size.height;
       const clampedX = THREE.MathUtils.clamp(x, boxWidth / 2 + 8, Math.max(boxWidth / 2 + 8, width - boxWidth / 2 - 8));
       const clampedY = THREE.MathUtils.clamp(y, safeTop + boxHeight / 2, safeBottom - boxHeight / 2);
       let best;
@@ -721,11 +745,10 @@ export class GPUScene {
     this.renderer.render(this.scene, this.camera);
   }
 
-  getCanvas() { return this.renderer?.domElement || null; }
-
   dispose() {
     this.disposed = true;
     cancelAnimationFrame(this.animationFrame);
+    if (this.hoverFrame !== null) { cancelAnimationFrame(this.hoverFrame); this.hoverFrame = null; }
     this.resizeObserver?.disconnect();
     this.controls?.dispose();
     const canvas = this.renderer?.domElement;

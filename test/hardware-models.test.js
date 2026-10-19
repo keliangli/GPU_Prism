@@ -26,5 +26,6 @@ test('reference register budget admits only complete blocks and respects shared 
 test('a blocked warp cannot pass dependency checking until it is ready',()=>{
   assert.deepEqual(advanceWarp(1,false),{stageIndex:1,stalled:true,complete:false});
   assert.equal(advanceWarp(1,true).stageIndex,2);
-  assert.equal(advanceWarp(5,true).complete,true);
+  assert.equal(advanceWarp(5,true).complete,false);
+  assert.equal(advanceWarp(6,true).complete,true);
 });

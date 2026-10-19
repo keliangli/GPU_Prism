@@ -37,7 +37,7 @@ function explorer() {
   document.title = '探索 H20 · INFAR';
   app.innerHTML = `${header(true)}<main class="explorer-page"><div class="explorer-heading"><div class="breadcrumbs"><a href="#/gpus">GPU 图鉴</a>${icon('chevron',12)}<span>NVIDIA H20</span>${icon('chevron',12)}<strong id="breadcrumb-level">${levels[state.level].name}</strong></div><div class="model-status"><i></i> 3D 实时渲染 <span>·</span><button data-action="sources">教学示意模型 ${icon('info',13)}</button></div></div><section class="gpu-heading"><div class="gpu-heading-title"><a class="back-button" href="#/gpus" aria-label="返回 GPU 图鉴">${icon('back',19)}</a><h1>NVIDIA <strong>H20</strong></h1><span class="architecture-pill">HOPPER</span><span class="module-type">SXM5 · 96 GB HBM3</span></div><button class="subtle-button" data-action="guide">${icon('book',16)} 探索指南</button></section><div class="explorer-workspace"><aside class="architecture-sidebar"><div class="sidebar-heading"><span>架构层级</span><span class="mono">LEVELS</span></div><div class="level-navigation">${Object.entries(levels).map(([id,l])=>`<button class="level-button ${l.parent?'sublevel':''} ${state.level===id?'active':''}" data-level="${id}" aria-pressed="${state.level===id}"><span class="level-number">${l.index}</span><span>${id==='warp'?'Warp 流水线':l.name}<small>${l.en}</small></span>${icon('chevron',15)}</button>`).join('')}</div><div class="sidebar-rule"></div><div class="sidebar-heading component-heading"><span>硬件组件</span><span id="component-count" class="mono">05</span></div><div id="component-list"></div><div class="sidebar-bottom"><span class="keyboard-hint">${icon('keyboard',15)} 快捷操作 <kbd>?</kbd></span><button data-action="guide" class="sidebar-tip">点击模型或组件，<br>开始探索它的工作原理。 ${icon('arrow',15)}</button></div></aside><section class="viewport-column" aria-label="3D 架构查看器"><div class="viewport-toolbar"><div class="view-tabs" role="group" aria-label="摄像机视角"><button data-view="iso" class="active">${icon('cube',14)} 透视</button><button data-view="top">${icon('grid',14)} 俯视</button><button data-view="front">${icon('layers',14)} 侧视</button></div><div class="viewport-actions"><button data-action="toggle-labels" class="icon-button ${state.labels?'active':''}" title="显示或隐藏标签" aria-label="显示或隐藏标签" aria-pressed="${state.labels}">${icon('label',17)}</button><button data-action="auto-rotate" class="icon-button ${state.autoRotate?'active':''}" title="自动旋转" aria-label="自动旋转" aria-pressed="${state.autoRotate}">${icon('rotate',17)}</button><span class="toolbar-divider"></span><button data-action="fullscreen" class="icon-button" title="全屏查看" aria-label="全屏查看">${icon('expand',17)}</button></div></div><div class="scene-stage"><div class="stage-title"><span class="stage-eyebrow">H20 / ARCHITECTURE EXPLORER</span><h2 id="stage-title">${levels[state.level].name}</h2><span id="stage-subtitle">${levels[state.level].title}</span></div><button id="stage-back" class="stage-back" data-action="parent-level" ${levels[state.level].parent?'':'hidden'}>${icon('back',13)} 返回 SM</button><div class="stage-coordinate">Y<br><span>↗</span> X ─ Z</div><div id="explorer-scene" class="explorer-scene" aria-label="可交互 NVIDIA H20 架构 3D 模型"></div><div class="canvas-help" id="canvas-help">${icon('target',14)} 点击任意组件，探索内部细节</div><div class="scene-navigation"><button data-action="zoom-in" aria-label="放大" title="放大">${icon('plus',18)}</button><button data-action="zoom-out" aria-label="缩小" title="缩小">${icon('minus',18)}</button><span></span><button data-action="reset" aria-label="重置视角" title="重置视角（R）">${icon('target',18)}</button></div><div class="stage-bottom"><div class="model-legend">${ARCHITECTURE_LEGEND.map(item=>`<span title="${item.description}"><i class="${item.className}" style="background:${item.color}"></i>${item.title}</span>`).join('')}</div><span class="scale-note">结构与比例为教学示意</span></div></div><div class="viewport-bottom"><div class="interaction-hints"><span>${icon('mouse',14)} 拖动旋转</span><span>${icon('move',14)} 右键平移</span><span>${icon('plus',13)} 滚轮缩放</span></div><button class="explode-button ${state.exploded?'active':''}" data-action="explode" aria-pressed="${state.exploded}">${icon('layers',16)}<span>分层展开</span><span class="toggle-switch"></span></button></div></section><aside class="detail-sidebar" aria-label="组件详情"><div class="detail-topline"><span>组件检查器</span><span class="mono">INSPECTOR ${icon('target',13)}</span></div><div id="component-detail" aria-live="polite"></div></aside></div><div id="deep-lab-root"></div><div class="explorer-bottom"><div><span class="bottom-label">H20 AT A GLANCE</span><div class="bottom-stat"><span>显存容量</span><strong>96 <small>GB</small></strong></div><div class="bottom-stat"><span>模块形态</span><strong>SXM5</strong></div><div class="bottom-stat"><span>互联</span><strong>NVLink</strong></div><div class="bottom-stat"><span>计算架构</span><strong>Hopper</strong></div></div><button class="flow-button ${state.flow?'active':''}" data-action="data-flow" aria-pressed="${state.flow}">${icon('flow',17)}<span>${state.flow?'停止数据流演示':'演示数据流'}</span>${icon('play',13)}</button></div><div class="explorer-note">${icon('info',13)} 模型用于理解架构关系，组件数量、位置与尺寸经过简化。<button data-action="sources">查看数据来源 ${icon('external',11)}</button></div></main>${footer()}`;
   scene = new GPUScene(document.querySelector('#explorer-scene'), {onSelect:id=>{if(id==='bank'&&state.level==='shared')lab.selectBank(scene.lastBank);selectComponent(id);},onHover:id=>{const h=document.querySelector('#canvas-help'); if(h) h.innerHTML=id&&components[id]?`${icon('target',14)} ${components[id].title} · 点击查看`:`${icon('target',14)} 点击任意组件，探索内部细节`;}});
-  scene.setLevel(state.level);scene.setSelected(state.selected);scene.setLabels(state.labels);scene.setExploded(state.exploded);scene.setAutoRotate(state.autoRotate);scene.setDataFlow(state.flow);
+  scene.setLevel(state.level, state.selected);scene.setLabels(state.labels);scene.setExploded(state.exploded);scene.setAutoRotate(state.autoRotate);scene.setDataFlow(state.flow);
   renderComponentList(); renderDetail();lab.mount(document.querySelector('#deep-lab-root'),state.level);
 }
 
@@ -55,17 +55,21 @@ function renderDetail() {
 }
 
 function selectComponent(id) { if(!components[id]||!levelComponents[state.level].includes(id)){scene?.setSelected(state.selected);return;} state.selected=id;state.tab='overview';scene?.setSelected(id);renderComponentList();renderDetail(); }
+// 层级相关的标题、面包屑与深度样式只在这里同步，避免多处重复赋值。
+function syncLevelChrome(id) {
+  const level=levels[id];
+  document.querySelector('#breadcrumb-level').textContent=(level.parent?'SM 微架构 / ':'')+level.name;
+  document.querySelector('#stage-title').textContent=level.name;
+  document.querySelector('#stage-subtitle').textContent=level.title;
+  document.querySelector('#stage-back').hidden=!level.parent;
+  document.querySelector('.explorer-workspace').classList.toggle('is-deep',!!level.parent);
+}
 function setLevel(id) {
   if(!levels[id])return;
   state.level=id;state.selected=levels[id].default;state.tab='overview';
-  scene?.setLevel(id);scene?.setSelected(state.selected);scene?.setExploded(state.exploded);scene?.setDataFlow(state.flow);
+  scene?.setLevel(id,state.selected);scene?.setExploded(state.exploded);scene?.setDataFlow(state.flow);
   document.querySelectorAll('[data-level]').forEach(el=>{el.classList.toggle('active',el.dataset.level===id);el.setAttribute('aria-pressed',el.dataset.level===id);});
-  document.querySelector('#breadcrumb-level').textContent=levels[id].name;
-  document.querySelector('#stage-title').textContent=levels[id].name;
-  document.querySelector('#stage-subtitle').textContent=levels[id].title;
-  document.querySelector('#stage-back').hidden=!levels[id].parent;
-  document.querySelector('.explorer-workspace').classList.toggle('is-deep',!!levels[id].parent);
-  document.querySelector('#breadcrumb-level').textContent=(levels[id].parent?'SM 微架构 / ':'')+levels[id].name;
+  syncLevelChrome(id);
   history.replaceState(null,'',`#/gpu/h20${id==='package'?'':`/${id}`}`);
   renderComponentList();renderDetail();lab.mount(document.querySelector('#deep-lab-root'),id);
 }
@@ -83,7 +87,7 @@ function route() {
   if(location.hash.startsWith('#/gpu/h20')){
     const requested=location.hash.split('/')[3]||'package';
     state.level=levels[requested]?requested:'package';state.selected=levels[state.level].default;
-    explorer();document.querySelector('.explorer-workspace').classList.toggle('is-deep',!!levels[state.level].parent);document.querySelector('#breadcrumb-level').textContent=(levels[state.level].parent?'SM 微架构 / ':'')+levels[state.level].name;
+    explorer();syncLevelChrome(state.level);
   }else home();
   window.scrollTo(0,0);
 }
