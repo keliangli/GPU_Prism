@@ -153,9 +153,11 @@ export class GPUScene {
     this.selectionBox.visible = false;
     this.scene.add(this.selectionBox);
 
-    this.pointerDown = (event) => { this.downPoint = { x: event.clientX, y: event.clientY }; };
+    this.pointerDown = (event) => { this.downPoint = event.button === 0 ? { x: event.clientX, y: event.clientY } : null; };
     this.pointerUp = (event) => {
-      if (!this.downPoint || Math.hypot(event.clientX - this.downPoint.x, event.clientY - this.downPoint.y) > 5) return;
+      const point = this.downPoint;
+      this.downPoint = null;
+      if (event.button !== 0 || !point || Math.hypot(event.clientX - point.x, event.clientY - point.y) > 5) return;
       const id = this.pick(event);
       if (id) { this.setSelected(id); this.onSelect(id); }
     };
