@@ -35,7 +35,7 @@ export const WARP_STAGES = [
   { id:'scoreboard', name:'依赖检查', short:'依赖检查', component:'scoreboard', description:'Scoreboard 跟踪尚未完成的依赖。源操作数未就绪、访存未返回或同步未满足时，该 Warp 暂时不能发射。' },
   { id:'scheduler', name:'Warp 调度', short:'调度', component:'scheduler', description:'调度器从满足依赖与资源条件的 Warp 中选择指令。等待中的 Warp 可以保留上下文，让其他就绪 Warp 先执行。' },
   { id:'dispatch', name:'指令发射', short:'发射', component:'dispatch', description:'发射逻辑把指令送往对应的执行管线。可发射条件还取决于执行单元和管线资源是否可用。' },
-  { id:'operand', name:'操作数收集', short:'读操作数', component:'operand', description:'从寄存器读取源操作数并送往执行单元。收集与读端口在此作功能示意，端口数和时序不代表 H20 的物理实现。' },
+  { id:'operand', name:'操作数收集', short:'读操作数', component:'operand', description:'从寄存器读取源操作数并送往执行单元。收集与读端口在此作功能示意，端口数和时序不代表具体 GPU 的物理实现。' },
   { id:'execute', name:'计算 / 访存', short:'执行', component:'execute', description:'ALU、Tensor Core、SFU 或 LSU 处理相应操作。不同操作具有不同延迟；这七个教学阶段不对应七个时钟周期。' },
   { id:'writeback', name:'结果写回', short:'写回', component:'writeback', description:'执行结果写回目标寄存器，相关依赖随完成状态更新。后续依赖这份数据的指令才可能变为就绪。' }
 ];

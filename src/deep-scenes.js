@@ -40,6 +40,7 @@ function foundation(s, level, width = 7.2, depth = 5.6) {
     const x = -width / 2 + .5 + i * (width - 1) / 17;
     for (const z of [-depth / 2 + .28, depth / 2 - .28]) s.box(base, .075, .018, .1, x, .184, z, s.mats.gold, null, .003);
   }
+  s.modelBadge(base, 0, .186, depth / 2 - .13, 1.62, { compact: true, id: null });
   return root;
 }
 

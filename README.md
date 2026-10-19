@@ -4,7 +4,7 @@
 
 **在线预览**：<https://infar-gpu-atlas.alert-grass-7728.chatgpt.site/>
 
-INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H20 SXM5 96GB，提供从封装、芯片、SM 到共享内存、寄存器文件、Warp 执行流水线的六层探索视图；其中三个深层视图附带可调参数的原理实验，把公开的 CUDA / Hopper 访问模型「跑」起来看。
+INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H20、H200、H100、H800 的 SXM 型号，提供从封装、芯片、SM 到共享内存、寄存器文件、Warp 执行流水线的六层探索视图；其中三个深层视图附带可调参数的原理实验，把公开的 CUDA / Hopper 访问模型「跑」起来看。
 
 它面向的是「理解硬件关系」而不是「背规格」：每个组件都能点开看说明、在推理场景中的意义和参考来源；每个模型也都明确标注了示意范围。
 
@@ -27,7 +27,7 @@ INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H
 | 项目 | 说明 |
 | --- | --- |
 | 形态 | 纯静态前端站点，无后端、无账号、不采集用户数据 |
-| 收录 GPU | NVIDIA H20 SXM5 96GB HBM3（Hopper 架构） |
+| 收录 GPU | NVIDIA H20 / H200 / H100 / H800（Hopper 架构，SXM 型号） |
 | 探索层级 | 6 层：封装总览、芯片架构、SM 微架构、共享内存、寄存器文件、Warp 执行流水线 |
 | 原理实验 | 3 个：共享内存 bank 冲突、寄存器资源预算、Warp 指令推进 |
 | 运行依赖 | 浏览器需支持 WebGL；无 WebGL 时自动降级为组件列表浏览 |
@@ -37,6 +37,17 @@ INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H
 ## 页面与路由
 
 站点为 SPA，使用 hash 路由，深链接可直接访问任意层级。
+
+以下路由中的 `h20` 可替换为 `h200`、`h100`、`h800`；每款 GPU 都提供完整六层视图。
+
+| GPU | 显存 | 显存带宽 | NVLink 带宽 | 已核实启用 SM |
+| --- | --- | --- | --- | --- |
+| H20 SXM5 | 96 GB HBM3 | 按具体配置核对 | 按具体配置核对 | 未在此列示 |
+| H200 SXM | 141 GB HBM3e | 4.8 TB/s | 900 GB/s | 132 |
+| H100 SXM | 80 GB HBM3 | 3.35 TB/s | 900 GB/s | 132 |
+| H800 SXM5 | 80 GB HBM | 3.35 TB/s | 400 GB/s | 未在此列示 |
+
+H800 容量与模块形态来自 NVIDIA 当前产品支持文档；带宽来自 NVIDIA 2023 年原版产品手册的第三方镜像。该手册未注明 HBM 代际，页面使用「HBM」表述。所有参数限定表中型号，不能直接套用到 PCIe 或 NVL 版本。
 
 | 路由 | 视图 | 内容 |
 | --- | --- | --- |
@@ -144,6 +155,7 @@ node --test
 │   ├── deep-lab.js            三个实验的交互面板与参数状态
 │   ├── hardware-models.js     纯逻辑模型：bank 映射、资源预算、指令推进（可单测）
 │   ├── data.js                组件说明、资料来源、层级与各层组件列表
+│   ├── gpu-profiles.js        四款 GPU 的产品规格、来源与组件内容适配
 │   ├── icons.js / palette.js  图标与配色词汇
 │   └── style.css / deep.css / color-theme.css
 ├── test/hardware-models.test.js
@@ -162,15 +174,15 @@ node --test
 
 ## 内容与模型边界
 
-H20 产品信息参考 NVIDIA 官方 vGPU 文档与 Dell XE9680 规格；内部原理参考 NVIDIA Hopper 架构与 CUDA 调优文档。来源链接可在网页「数据来源」中打开。
+H20 产品信息参考 NVIDIA 官方 vGPU 文档与 Dell XE9680 规格；H100、H200 参考 NVIDIA 当前产品页、HGX 系统文档与 DevTech 技术课件；H800 参考 NVIDIA vGPU 文档和 NVIDIA 原版产品手册镜像。内部原理参考 NVIDIA Hopper 架构与 CUDA 调优文档。来源链接可在网页「数据来源」中打开。
 
 3D 模型是功能关系的教学示意，不能作为实际芯片的 CAD、floorplan 或核心数量依据。不同版本与服务器配置可能有差异。没有将 H100 的 SM 数量、L2 容量与计算峰值套用于 H20。
 
-共享内存示例限定一个 Warp 的每个活跃 lane 读取一个对齐的 32-bit word，并区分不同地址冲突与同址读取广播；不覆盖向量或更宽访问。寄存器资源模型采用公开 Hopper/H100 参考容量，忽略寄存器分配粒度、SM 分区和其他硬件约束，不代表 H20 的实测占用率。寄存器 bank、端口、操作数收集与执行阶段的物理数量、位置和时序未公开，图中均为功能抽象；流水线步进表示因果关系，不代表真实流水线深度或时钟周期。
+共享内存示例限定一个 Warp 的每个活跃 lane 读取一个对齐的 32-bit word，并区分不同地址冲突与同址读取广播；不覆盖向量或更宽访问。寄存器资源模型采用 Hopper 公开架构参考容量，综合寄存器、线程、Warp、线程块与共享内存预算，仍忽略寄存器分配粒度、SM 分区和其他硬件约束；在 H20 页面明确作为参考模型，不代表实测占用率。寄存器 bank、端口、操作数收集与执行阶段的物理数量、位置和时序未公开，图中均为功能抽象；流水线步进表示因果关系，不代表真实流水线深度或时钟周期。
 
 ## 数据来源
 
-站点「数据来源」弹层中可点击访问，原始清单见 `src/data.js`：
+站点「数据来源」弹层中可点击访问，共性架构来源见 `src/data.js`，型号产品来源见 `src/gpu-profiles.js`：
 
 1. NVIDIA AI Enterprise · Hopper vGPU —— H20 SXM5 96GB 产品与 MIG 配置
 2. NVIDIA Hopper Architecture In-Depth —— SM、Tensor Core、TMA 与存储层级
@@ -180,6 +192,10 @@ H20 产品信息参考 NVIDIA 官方 vGPU 文档与 Dell XE9680 规格；内部�
 6. CUDA Programming Guide —— Warp、线程、寄存器与共享内存访问模型
 7. PTX ISA · Asynchronous Operations —— TMA、mbarrier 与异步矩阵计算的指令语义
 8. NVIDIA Nsight Compute · Profiling Guide —— Warp 就绪、发射与依赖等待的可观测状态
+9. NVIDIA H100 / H200 官方产品页与 HGX AI Factory 系统组件文档 —— 容量、类型、带宽与互联
+10. NVIDIA DevTech · CUDA Programming and Optimization —— H100 / H200 的 132 个 SM 与 50 MB L2
+11. NVIDIA AI Enterprise · Hopper H800 —— H800 SXM5 80GB 与 MIG 配置
+12. NVIDIA H800 Tensor Core GPU 2023 产品手册（第三方镜像）—— H800 SXM 的显存与 NVLink 带宽
 
 ## 部署
 
@@ -193,9 +209,9 @@ npm run build
 
 站点数据驱动的部分与渲染部分分离，新增一颗 GPU 大致需要：
 
-1. 在 `src/data.js` 的 `components` 中补充该 GPU 的组件说明，并加入 `levelComponents` 对应层级；
-2. 在 `src/gpu-scene.js` 中按层级构建新的 3D 结构（深层视图可参考 `src/deep-scenes.js`）；
-3. 在 `src/main.js` 的 `home()` 与 `route()` 中增加入口与路由分支。
+1. 在 `src/gpu-profiles.js` 中增加型号配置、公开产品来源与必要的组件内容适配；同属 Hopper 的型号可复用六层功能模型；
+2. 如果属于不同架构，在 `src/gpu-scene.js` 中按层级构建相应 3D 结构，并在 `src/data.js` 补充架构组件（深层视图可参考 `src/deep-scenes.js`）；
+3. 目录与路由通过 GPU 配置读取型号。检查各层标题、显存与带宽、来源索引和实验说明，避免继承其他型号的专用文字或未核实规格。
 
 ---
 

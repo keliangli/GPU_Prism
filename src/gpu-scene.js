@@ -6,11 +6,17 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createSharedScene, createRegistersScene, createWarpScene, applyDeepExperiment } from './deep-scenes.js';
 import { colorFor, ROLE_COLORS } from './palette.js';
 
-// An explanatory model, intentionally not a claim about H20's physical floorplan.
+// An explanatory Hopper model, intentionally not a physical silicon floorplan.
+// Package blocks and displayed memory layers indicate functions, not unit counts.
 const COLORS = {
   board: 0x34465f, boardEdge: 0x18273b, interposer: 0x667a96,
   silicon: 0x202f49, gold: 0xb9a375,
   metal: 0x9caabc, graphite: 0x26364d,
+};
+
+const DEFAULT_GPU = {
+  id: 'h20', name: 'H20', memoryGB: 96, memoryType: 'HBM3',
+  accent: '#729dff',
 };
 
 const LABEL_CSS = `
@@ -23,8 +29,10 @@ const LABEL_CSS = `
 `;
 
 export class GPUScene {
-  constructor(container, { onSelect = () => {}, onHover = () => {} } = {}) {
+  constructor(container, { gpu = DEFAULT_GPU, onSelect = () => {}, onHover = () => {} } = {}) {
     this.container = container;
+    this.gpu = { ...DEFAULT_GPU, ...gpu };
+    this.modelCode = String(this.gpu.id || 'h20').toUpperCase();
     this.onSelect = onSelect;
     this.onHover = onHover;
     this.level = 'package';
@@ -32,6 +40,7 @@ export class GPUScene {
     this.exploded = false;
     this.labelsVisible = true;
     this.dataFlow = false;
+    this.flowStep = 0;
     this.autoRotate = false;
     this.lastBank = 0;
     this.experiment = { bankCounts: Array(32).fill(0), selectedBank: null, stage: null, activeWarp: 0, registerUsage: 64 };
@@ -44,6 +53,7 @@ export class GPUScene {
     this.flowGroups = [];
     this.materials = new Set();
     this.geometries = new Set();
+    this.textures = new Set();
     this.disposed = false;
     this.mouse = new THREE.Vector2();
     this.raycaster = new THREE.Raycaster();
@@ -66,7 +76,11 @@ export class GPUScene {
     } catch (error) {
       this.fallback = document.createElement('div');
       this.fallback.className = 'gpu-webgl-fallback';
-      this.fallback.innerHTML = '<div><strong>3D 架构探索</strong>当前浏览器未能启动 WebGL。<br>请开启浏览器硬件加速，或使用支持 WebGL 的浏览器。<br>仍可通过左侧列表浏览 H20 硬件组件。</div>';
+      const message = document.createElement('div');
+      const heading = document.createElement('strong');
+      heading.textContent = '3D 架构探索';
+      message.append(heading, document.createTextNode(`当前浏览器未能启动 WebGL。请开启浏览器硬件加速，或使用支持 WebGL 的浏览器。仍可通过左侧列表浏览 ${this.modelCode} 硬件组件。`));
+      this.fallback.append(message);
       container.appendChild(this.fallback);
       return;
     }
@@ -80,7 +94,7 @@ export class GPUScene {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const canvas = this.renderer.domElement;
     canvas.style.cssText = 'display:block;position:absolute;inset:0;width:100%;height:100%;outline:none;touch-action:none;';
-    canvas.setAttribute('aria-label', 'H20 GPU 三维架构模型，可拖动旋转，滚动缩放，点击组件查看详情');
+    canvas.setAttribute('aria-label', `${this.modelCode} GPU 三维架构模型，可拖动旋转，滚动缩放，点击组件查看详情`);
     canvas.setAttribute('role', 'img');
     container.insertBefore(canvas, this.labelLayer);
 
@@ -146,6 +160,7 @@ export class GPUScene {
       gold: this.material(COLORS.gold, .65, .4),
       metal: this.material(COLORS.metal, .65, .39),
       graphite: this.material(COLORS.graphite, .42, .5),
+      modelAccent: this.material(this.gpu.accent, .38, .44),
       copper: this.material(0xb99581, .6, .44),
       dark: this.material(0x0e1828, .32, .51),
       trace: new THREE.LineBasicMaterial({ color: 0x9caec9, transparent: true, opacity: .42 }),
@@ -163,6 +178,9 @@ export class GPUScene {
     createWarpScene(this);
     this.batchStaticGeometry();
     applyDeepExperiment(this, this.experiment);
+    // 记录每个层级的流线序号上限：warp 层的流线按阶段顺序编号，可与演示步骤联动。
+    this.flowIndexMax = {};
+    for (const flow of this.flowGroups) this.flowIndexMax[flow.level] = Math.max(this.flowIndexMax[flow.level] ?? 0, flow.index);
     this.selectionBox = new THREE.Box3Helper(new THREE.Box3(), colorFor(this.selected));
     this.selectionBox.material.transparent = true;
     this.selectionBox.material.opacity = .55;
@@ -279,6 +297,41 @@ export class GPUScene {
     this.explodeParts.push({ group, base: group.position.y, height });
   }
 
+  modelBadge(parent, x, y, z, width = 2.5, { compact = false, id = 'gpu' } = {}) {
+    // Printed identity, not an architectural block: role colors remain consistent.
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = compact ? 112 : 256;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#132238';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = this.gpu.accent;
+    context.fillRect(0, 0, 13, canvas.height);
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillStyle = '#e8f1ff';
+    context.font = compact ? '600 50px Arial, sans-serif' : '600 112px Arial, sans-serif';
+    context.fillText(compact ? `${this.modelCode} / HOPPER` : this.modelCode, 520, compact ? 58 : 95);
+    if (!compact) {
+      context.fillStyle = this.gpu.accent;
+      context.font = '500 38px Consolas, monospace';
+      context.fillText(`${this.gpu.memoryGB} GB ${this.gpu.memoryType}`, 520, 194);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
+    this.textures.add(texture);
+    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    this.materials.add(material);
+    const plaque = this.mesh(new THREE.PlaneGeometry(width, width * canvas.height / canvas.width), material, parent, x, y, z, id);
+    plaque.rotation.x = -Math.PI / 2;
+    plaque.castShadow = false;
+    plaque.receiveShadow = false;
+    return plaque;
+  }
+
   createGround() {
     const groundMat = new THREE.ShadowMaterial({ color: 0x020714, opacity: .32 });
     this.materials.add(groundMat);
@@ -306,6 +359,9 @@ export class GPUScene {
     this.box(board, 7.22, .07, 6.22, 0, -.075, 0, this.mats.metal, 'substrate', .07);
     this.box(board, 7.12, .12, 6.12, 0, .015, 0, this.mats.board, 'substrate', .055);
     this.box(board, 6.86, .025, 5.85, 0, .087, 0, this.mats.boardEdge, 'substrate', .035);
+    for (const side of [-1, 1]) this.box(board, .07, .02, 1.9, side * 3.4, .11, 0, this.mats.modelAccent, 'substrate', .006);
+    this.box(board, 2.2, .018, .26, 0, .18, 2.69, this.mats.dark, 'substrate', .008);
+    this.modelBadge(board, 0, .191, 2.69, 2.2, { compact: true, id: 'substrate' });
     // Distinct circuit board layers around the module's exposed edge.
     for (const y of [-.01, .025, .06]) {
       const edge = this.box(board, 7.125, .008, 6.125, 0, y, 0, this.mats.gold, 'substrate', .035);
@@ -366,8 +422,9 @@ export class GPUScene {
     for (let i = 0; i < 7; i++) {
       this.box(gpu, .026, .01, 3.58, -1.45 + i * .484, .216, 0, this.mats.computeLight, 'gpu', 0);
     }
+    this.modelBadge(gpu, 0, .23, -.08, 1.85);
     this.explosion(gpu, .75);
-    this.label('package', gpu, 'gpu', 'HOPPER GPU', [0, .38, -.25], [0, -7]);
+    this.label('package', gpu, 'gpu', `${this.modelCode} · HOPPER GPU`, [0, .38, -.25], [0, -7]);
 
     const memories = this.group(interposer, 'hbm', 'package');
     for (const x of [-2.12, 2.12]) for (let i = 0; i < 3; i++) {
@@ -383,7 +440,7 @@ export class GPUScene {
       this.box(memory, .095, .009, .095, -.22, .335, -.36, this.mats.metal, 'hbm', .006);
     }
     this.explosion(memories, 1.0);
-    this.label('package', memories, 'hbm', 'HBM3 MEMORY', [2.11, .66, .18], [21, -2]);
+    this.label('package', memories, 'hbm', `${this.gpu.memoryGB} GB ${this.gpu.memoryType}`, [2.11, .66, .18], [21, -2]);
 
     const nvlink = this.group(root, 'nvlink', 'package', [0, .15, -2.84]);
     this.box(nvlink, 3.18, .16, .29, 0, 0, 0, this.mats.interconnect, 'nvlink', .018);
@@ -398,7 +455,7 @@ export class GPUScene {
       this.box(pcie, .051, .018, .285, -1.72 + i * .08, .055, .025, this.mats.gold, 'pcie', .003);
     }
     this.label('package', pcie, 'pcie', 'PCIe 5.0 I/O', [0, .1, .16], [-2, 31]);
-    this.label('package', board, 'substrate', 'SXM MODULE', [-2.95, .19, 1.8], [-37, 18]);
+    this.label('package', board, 'substrate', `${this.modelCode} SXM MODULE`, [-2.95, .19, 1.8], [-37, 18]);
     this.addFlow(root, 'package', [new THREE.Vector3(0, .55, 0), new THREE.Vector3(2.1, .67, 0)], 4);
     this.addFlow(root, 'package', [new THREE.Vector3(0, .55, 0), new THREE.Vector3(-2.1, .67, 0)], 4);
     this.addFlow(root, 'package', [new THREE.Vector3(0, .55, -1.7), new THREE.Vector3(0, .34, -2.8)], 3);
@@ -411,6 +468,7 @@ export class GPUScene {
     this.box(substrate, 6.88, .055, 5.4, 0, .015, 0, this.mats.metal, 'gpu', .04);
     this.box(substrate, 6.73, .15, 5.24, 0, .105, 0, this.mats.silicon, 'gpu', .035);
     this.box(substrate, 6.48, .025, 4.98, 0, .192, 0, this.mats.board, 'gpu', .018);
+    this.modelBadge(substrate, 0, .214, -2.48, 2.1, { compact: true });
     const gpcs = this.group(root, 'gpc', 'die');
     for (let row = 0; row < 2; row++) for (let col = 0; col < 3; col++) {
       const x = -2.1 + col * 2.1;
@@ -443,7 +501,7 @@ export class GPUScene {
     this.label('die', gpcs, 'gpc', 'GRAPHICS PROCESSING CLUSTER', [-2.1, .64, -.99], [-5, -18]);
     this.label('die', this.targets.die.sm, 'sm', 'STREAMING MULTIPROCESSOR', [0, .2, 0], [-48, 62]);
     this.label('die', l2, 'l2', 'L2 CACHE', [1.6, .18, 0], [33, -12]);
-    this.label('die', memory, 'hbm', 'HBM INTERFACE', [1.5, .48, 2.25], [6, 29]);
+    this.label('die', memory, 'hbm', `${this.gpu.memoryType} INTERFACE`, [1.5, .48, 2.25], [6, 29]);
     this.addFlow(root, 'die', [new THREE.Vector3(-2.8, .57, 0), new THREE.Vector3(2.8, .57, 0)], 9);
   }
 
@@ -454,6 +512,7 @@ export class GPUScene {
     this.box(base, 6.65, .045, 5.35, 0, 0, 0, this.mats.metal, 'sm', .035);
     this.box(base, 6.5, .13, 5.2, 0, .09, 0, this.mats.silicon, 'sm', .025);
     this.box(base, 6.24, .025, 4.94, 0, .17, 0, this.mats.board, 'sm', .015);
+    this.modelBadge(base, 0, .19, -2.47, 1.7, { compact: true, id: 'sm' });
     const cuda = this.group(root, 'cuda', 'sm');
     const tensor = this.group(root, 'tensor', 'sm');
     const scheduler = this.group(root, 'scheduler', 'sm');
@@ -513,7 +572,8 @@ export class GPUScene {
     group.userData.dynamic = true;
     group.visible = false;
     parent.add(group);
-    this.flowGroups.push({ group, level });
+    const index = this.flowGroups.filter(flow => flow.level === level).length;
+    this.flowGroups.push({ group, level, index });
     const material = new THREE.LineBasicMaterial({ color: 0x9bdce9, transparent: true, opacity: .36 });
     this.materials.add(material);
     this.line(group, points.map(p => p.toArray()), material);
@@ -632,6 +692,7 @@ export class GPUScene {
     if (this.controls) this.controls.autoRotate = this.autoRotate && !this.reducedMotion;
   }
   setDataFlow(value) { this.dataFlow = !!value; }
+  setFlowStep(value) { this.flowStep = Math.max(0, Number(value) || 0); }
 
   setExperiment(data = {}) {
     this.experiment = { ...this.experiment, ...data };
@@ -730,7 +791,9 @@ export class GPUScene {
       const target = part.base + (this.exploded ? part.height : 0);
       part.group.position.y = this.reducedMotion ? target : THREE.MathUtils.damp(part.group.position.y, target, 7, delta);
     }
-    for (const flow of this.flowGroups) flow.group.visible = this.dataFlow && flow.level === this.level;
+    // warp 层的流线按阶段顺序编号，只显示当前步骤对应的那一段，让图示与文字说明对齐。
+    const stepFlow = this.level === 'warp' ? Math.min(this.flowStep, this.flowIndexMax?.warp ?? 0) : null;
+    for (const flow of this.flowGroups) flow.group.visible = this.dataFlow && flow.level === this.level && (stepFlow === null || flow.index === stepFlow);
     if (this.dataFlow) for (const flow of this.flowDots) {
       if (flow.level !== this.level) continue;
       flow.curve.getPointAt((flow.phase + (this.reducedMotion ? 0 : this.elapsed * .18)) % 1, flow.dot.position);
@@ -765,6 +828,7 @@ export class GPUScene {
     });
     for (const geometry of this.geometries) geometry.dispose();
     for (const material of this.materials) material.dispose();
+    for (const texture of this.textures) texture.dispose();
     for (const texture of this.deepTextures || []) texture.dispose();
     this.environment?.dispose();
     this.renderer?.dispose();

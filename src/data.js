@@ -64,5 +64,81 @@ export const levels = {
  warp:{name:'Warp 执行流水线',en:'WARP EXECUTION',index:'06',title:'追踪一条指令，理解等待与推进。',parent:'sm',default:'scheduler'}
 };
 
+// Data-flow walkthroughs: one ordered step list per level, used by the "演示数据流" panel
+// below the 3D stage. `component` links a step to the 3D highlight and its role color.
+export const flows = {
+ package: {
+  title:'一次推理请求在封装内的往返',
+  summary:'权重从显存读出、进入 GPU 计算，结果再回到显存或经互联送往其他 GPU。',
+  steps:[
+   { id:'read-weights', label:'HBM 读权重', component:'hbm', detail:'模型权重与 KV Cache 常驻显存。每生成一个 token，都要重新读取这一步所需的权重与缓存。' },
+   { id:'compute', label:'核心计算', component:'gpu', detail:'数据经中介层进入 GPU 裸片，SM 取出权重与激活值完成矩阵乘加等计算。' },
+   { id:'write-kv', label:'写回显存', component:'hbm', detail:'计算结果与新的 KV Cache 追加写回显存，供后续 token 复用。' },
+   { id:'cross-gpu', label:'多卡交换', component:'nvlink', detail:'张量并行时，各 GPU 通过 NVLink 交换中间结果（如 all-reduce），把分布的部分答案合并。' },
+   { id:'host-io', label:'主机往返', component:'pcie', detail:'请求与结果在主机侧进出；模型加载和较长上下文的输入也经过这条通道。' }
+  ]
+ },
+ die: {
+  title:'数据在裸片上的走向',
+  summary:'显存接口取数据，L2 复用，再分发到计算集群中的各个 SM。',
+  steps:[
+   { id:'hbm-in', label:'显存读出', component:'hbm', detail:'权重与激活从 HBM 接口读出。显存带宽常常是这一层最先遇到的瓶颈。' },
+   { id:'l2-reuse', label:'L2 复用', component:'l2', detail:'L2 被多个 SM 共享。命中缓存的数据不必再次访问 HBM，从而降低外部显存流量和延迟。' },
+   { id:'dispatch', label:'分发集群', component:'gpc', detail:'线程块被分配到计算集群内的各个 SM，SM 之间通过片上互联交换数据。' },
+   { id:'sm-run', label:'SM 执行', component:'sm', detail:'SM 内的执行单元完成矩阵乘加、向量与访存操作，结果按层级向上返回。' },
+   { id:'hbm-out', label:'写回显存', component:'hbm', detail:'结果经缓存合并后回到显存。模型权重远大于片上缓存，因此缓存只能缓解而不能替代显存容量。' }
+  ]
+ },
+ sm: {
+  title:'一个 SM 内部如何处理一条指令流',
+  summary:'从调度器取指开始，经寄存器、执行单元、共享内存、访存与异步搬运，最后同步等待数据就绪。',
+  steps:[
+   { id:'issue', label:'取指调度', component:'scheduler', detail:'调度器从驻留 Warp 中挑选依赖与资源都满足的指令，取指译码后准备发射。' },
+   { id:'read-regs', label:'读操作数', component:'registers', detail:'源操作数从寄存器文件读出，送往对应的执行通路。寄存器用量也会反过来限制能驻留多少 Warp。' },
+   { id:'execute', label:'执行运算', component:'tensor', detail:'Tensor Core 完成矩阵乘加；归一化、激活等通用运算由 CUDA Core 承担。' },
+   { id:'onchip', label:'片上复用', component:'shared', detail:'会被同一线程块反复使用的数据放进共享内存 / L1，避免重复走显存路径。' },
+   { id:'memory', label:'访存', component:'lsu', detail:'加载与存储指令经 LSU 完成地址计算，访问共享内存或全局内存路径。' },
+   { id:'async', label:'异步搬运', component:'tma', detail:'TMA 在全局内存与共享内存之间搬运多维数据块，搬运期间线程块可以继续计算。' },
+   { id:'sync', label:'同步就绪', component:'barrier', detail:'屏障与 mbarrier 确认数据真的到达并可见，消费者才开始使用；发起搬运不等于数据已就绪。' }
+  ]
+ },
+ shared: {
+  title:'一次 Warp 访存到 32 个 bank',
+  summary:'32 条 lane 各发一个请求，地址决定落在哪些 bank，冲突与否决定要分批几次。',
+  steps:[
+   { id:'request', label:'发起访问', component:'lsu', detail:'一个 Warp 的 32 个活跃 lane 各自发出一次对齐的 32-bit word 访存请求。' },
+   { id:'map', label:'地址映射', component:'address', detail:'按 word = offset + lane × stride、bank = word mod 32 计算，地址低位决定分布到哪些 bank。' },
+   { id:'banks', label:'bank 并行', component:'banks', detail:'32 个 bank 可以并行服务请求；落在不同 bank 的访问互不影响。' },
+   { id:'conflict', label:'冲突与广播', component:'bank', detail:'同一 bank 上的不同字地址需要分批服务，即 bank 冲突；多个 lane 读同一个地址可以广播，不算冲突。' },
+   { id:'tma-load', label:'异步搬运', component:'tma', detail:'TMA 可以把全局内存中的数据块直接搬进共享内存，让搬运与计算重叠。' },
+   { id:'ready', label:'同步就绪', component:'barrier', detail:'搬运完成后由 mbarrier 通知消费者，线程块才读取这批共享内存数据。' }
+  ]
+ },
+ registers: {
+  title:'一个操作数如何走进寄存器文件',
+  summary:'寄存器先按线程块分配，再按分区并行读取、汇集操作数，结果写回或溢出到 local。',
+  steps:[
+   { id:'allocate', label:'分配寄存器', component:'registerFile', detail:'编译器决定每线程寄存器需求，SM 在此基础上按线程块驻留情况分配物理寄存器。' },
+   { id:'read', label:'并行读取', component:'registerBank', detail:'寄存器文件按内部分区并行向执行单元供给操作数，图中分区为功能示意。' },
+   { id:'gather', label:'操作数汇集', component:'operand', detail:'计算开始前，源操作数被读齐并送往相应执行通路；就绪检查与读取可以相互重叠。' },
+   { id:'write', label:'结果写回', component:'writeback', detail:'结果写回目标寄存器后，依赖这份数据的后续指令才可能被调度推进。' },
+   { id:'spill', label:'溢出到 local', component:'spill', detail:'寄存器不够时，部分值被溢出到线程私有的 local 地址空间（由设备全局内存支撑，不是共享内存）。' }
+  ]
+ },
+ warp: {
+  title:'一条指令抵达执行单元的七个阶段',
+  summary:'从取指到写回逐步推进，观察依赖未就绪时 Warp 如何等待、其他 Warp 如何顶上来。',
+  steps:[
+   { id:'fetch', label:'取指 / 译码', component:'fetch', detail:'取得要执行的指令，识别运算类型、源操作数与目标寄存器。' },
+   { id:'scoreboard', label:'依赖检查', component:'scoreboard', detail:'记分牌跟踪未完成的依赖。源操作数未就绪或访存未返回时，该 Warp 暂时不能发射。' },
+   { id:'scheduler', label:'Warp 调度', component:'scheduler', detail:'调度器从依赖与资源都满足的 Warp 中选择指令；等待中的 Warp 保留上下文，让其他就绪 Warp 先执行。' },
+   { id:'dispatch', label:'指令发射', component:'dispatch', detail:'发射逻辑把指令送往对应执行管线，可用性还取决于执行单元与管线资源。' },
+   { id:'operand', label:'操作数收集', component:'operand', detail:'从寄存器读取源操作数并送往执行单元。端口数与时序在此仅为功能示意。' },
+   { id:'execute', label:'执行', component:'execute', detail:'ALU、Tensor Core、SFU 或 LSU 处理相应操作，不同操作具有不同延迟。' },
+   { id:'writeback', label:'结果写回', component:'writeback', detail:'结果写回目标寄存器，依赖状态随之更新，后续指令才可能变为就绪。' }
+  ]
+ }
+};
+
 // Keep every inspector chip aligned with its 3D material and model label.
 for (const [id, component] of Object.entries(components)) component.color = colorFor(id);
