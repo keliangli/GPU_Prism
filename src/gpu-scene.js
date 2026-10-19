@@ -1,0 +1,671 @@
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+// An explanatory model, intentionally not a claim about H20's physical floorplan.
+const COLORS = {
+  board: 0x253e34, boardEdge: 0x162b24, interposer: 0x526457,
+  silicon: 0x1c322a, lime: 0xb8ed6c, mint: 0x77b99a, gold: 0xa2a06b,
+  metal: 0x7d8e82, graphite: 0x283b34, memory: 0x344a40,
+};
+
+const LABEL_CSS = `
+.gpu-label-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:3}
+.gpu-label-layer .scene-label{position:absolute;left:0;top:0;display:flex;align-items:center;gap:7px;white-space:nowrap;border:1px solid rgba(162,191,164,.23);border-radius:3px;background:rgba(16,26,24,.82);color:#c6d5c9;padding:6px 9px;font:500 9px/1.25 'JetBrains Mono','SFMono-Regular',Consolas,monospace;letter-spacing:1.05px;pointer-events:auto;cursor:pointer;backdrop-filter:blur(8px);transition:color .18s,border-color .18s,background .18s;box-shadow:0 2px 14px #0002}
+.gpu-label-layer .scene-label::before{content:'';width:4px;height:4px;background:#b8ed6c;border-radius:50%;box-shadow:0 0 7px #b8ed6c66}
+.gpu-label-layer .scene-label::after{content:'+';margin-left:5px;color:#819586;font-size:12px;font-weight:400}
+.gpu-label-layer .scene-label:hover,.gpu-label-layer .scene-label.is-selected{color:#d6f6ad;border-color:#8cb35c;background:rgba(35,52,34,.94)}
+.gpu-webgl-fallback{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#b7cfb8;font:13px/1.9 sans-serif;padding:30px}.gpu-webgl-fallback strong{font-size:19px;color:#d2edb6;font-weight:500;display:block;margin-bottom:10px}
+`;
+
+export class GPUScene {
+  constructor(container, { onSelect = () => {}, onHover = () => {} } = {}) {
+    this.container = container;
+    this.onSelect = onSelect;
+    this.onHover = onHover;
+    this.level = 'package';
+    this.selected = 'gpu';
+    this.exploded = false;
+    this.labelsVisible = true;
+    this.dataFlow = false;
+    this.autoRotate = false;
+    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.groups = {};
+    this.targets = {};
+    this.labels = [];
+    this.explodeParts = [];
+    this.flowDots = [];
+    this.flowGroups = [];
+    this.materials = new Set();
+    this.geometries = new Set();
+    this.disposed = false;
+    this.mouse = new THREE.Vector2();
+    this.raycaster = new THREE.Raycaster();
+    this.clock = new THREE.Clock();
+    this.tempVector = new THREE.Vector3();
+    this.hovered = null;
+    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+
+    this.style = document.createElement('style');
+    this.style.textContent = LABEL_CSS;
+    container.appendChild(this.style);
+    this.labelLayer = document.createElement('div');
+    this.labelLayer.className = 'gpu-label-layer';
+    container.appendChild(this.labelLayer);
+
+    try {
+      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    } catch (error) {
+      this.fallback = document.createElement('div');
+      this.fallback.className = 'gpu-webgl-fallback';
+      this.fallback.innerHTML = '<div><strong>3D 架构探索</strong>当前浏览器未能启动 WebGL。<br>请开启浏览器硬件加速，或使用支持 WebGL 的浏览器。<br>仍可通过左侧列表浏览 H20 硬件组件。</div>';
+      container.appendChild(this.fallback);
+      return;
+    }
+
+    this.renderer.setClearColor(0x101a18, 0);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.25;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const canvas = this.renderer.domElement;
+    canvas.style.cssText = 'display:block;position:absolute;inset:0;width:100%;height:100%;outline:none;touch-action:none;';
+    canvas.setAttribute('aria-label', 'H20 GPU 三维架构模型，可拖动旋转，滚动缩放，点击组件查看详情');
+    canvas.setAttribute('role', 'img');
+    container.insertBefore(canvas, this.labelLayer);
+
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.OrthographicCamera(-6, 6, 5, -5, .1, 100);
+    this.camera.position.set(9, 9.4, 11);
+    this.camera.lookAt(0, .35, 0);
+    this.controls = new OrbitControls(this.camera, canvas);
+    this.controls.target.set(0, .35, 0);
+    this.controls.enableDamping = !this.reducedMotion;
+    this.controls.dampingFactor = .07;
+    this.controls.enablePan = true;
+    this.controls.panSpeed = .55;
+    this.controls.minZoom = .65;
+    this.controls.maxZoom = 3.4;
+    this.controls.minPolarAngle = .15;
+    this.controls.maxPolarAngle = Math.PI / 2.08;
+    this.controls.autoRotateSpeed = .4;
+    this.controls.zoomSpeed = .65;
+    this.controls.rotateSpeed = .6;
+
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    const room = new RoomEnvironment();
+    this.environment = pmrem.fromScene(room, .04);
+    this.scene.environment = this.environment.texture;
+    room.dispose();
+    pmrem.dispose();
+    this.scene.add(new THREE.AmbientLight(0xdcebd4, .65));
+    const key = new THREE.DirectionalLight(0xe7f5dd, 3.2);
+    key.position.set(-5, 10, 5);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    Object.assign(key.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, near: .1, far: 30 });
+    key.shadow.bias = -.0008;
+    key.shadow.normalBias = .035;
+    key.shadow.radius = 5;
+    this.scene.add(key);
+    const rim = new THREE.DirectionalLight(0xb7e7c1, 2.6);
+    rim.position.set(4, 5, -7);
+    this.scene.add(rim);
+    const front = new THREE.DirectionalLight(0x9db3b0, .85);
+    front.position.set(1, 3, 9);
+    this.scene.add(front);
+
+    this.mats = {
+      board: this.material(COLORS.board, .57, .6),
+      boardEdge: this.material(COLORS.boardEdge, .5, .46),
+      interposer: this.material(COLORS.interposer, .68, .35),
+      silicon: this.material(COLORS.silicon, .65, .25),
+      tile: this.material(0x86a76b, .65, .4),
+      tileDark: this.material(0x547552, .7, .4),
+      lime: this.material(COLORS.lime, .52, .35, 0x779f36, .3),
+      gold: this.material(COLORS.gold, .8, .35),
+      metal: this.material(COLORS.metal, .85, .3),
+      graphite: this.material(COLORS.graphite, .75, .4),
+      memory: this.material(COLORS.memory, .72, .37),
+      mint: this.material(COLORS.mint, .6, .4),
+      copper: this.material(0x948778, .8, .4),
+      dark: this.material(0x0c1813, .4, .45),
+      trace: new THREE.LineBasicMaterial({ color: 0x9d9f67, transparent: true, opacity: .5 }),
+      etch: new THREE.LineBasicMaterial({ color: 0xadc495, transparent: true, opacity: .35 }),
+    };
+    this.materials.add(this.mats.trace);
+    this.materials.add(this.mats.etch);
+
+    this.createGround();
+    this.createPackage();
+    this.createDie();
+    this.createSM();
+    this.batchStaticGeometry();
+    this.selectionBox = new THREE.Box3Helper(new THREE.Box3(), 0xbced7a);
+    this.selectionBox.material.transparent = true;
+    this.selectionBox.material.opacity = .55;
+    this.selectionBox.material.depthTest = false;
+    this.selectionBox.renderOrder = 8;
+    this.selectionBox.visible = false;
+    this.scene.add(this.selectionBox);
+
+    this.pointerDown = (event) => { this.downPoint = { x: event.clientX, y: event.clientY }; };
+    this.pointerUp = (event) => {
+      if (!this.downPoint || Math.hypot(event.clientX - this.downPoint.x, event.clientY - this.downPoint.y) > 5) return;
+      const id = this.pick(event);
+      if (id) { this.setSelected(id); this.onSelect(id); }
+    };
+    this.pointerMove = (event) => {
+      const id = this.pick(event);
+      canvas.style.cursor = id ? 'pointer' : 'grab';
+      if (id !== this.hovered) { this.hovered = id; this.onHover(id); }
+    };
+    this.pointerLeave = () => { this.hovered = null; this.onHover(null); canvas.style.cursor = 'grab'; };
+    canvas.addEventListener('pointerdown', this.pointerDown);
+    canvas.addEventListener('pointerup', this.pointerUp);
+    canvas.addEventListener('pointermove', this.pointerMove);
+    canvas.addEventListener('pointerleave', this.pointerLeave);
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(container);
+    this.setLevel('package');
+    this.resize();
+    this.animate();
+  }
+
+  material(color, metalness = .4, roughness = .45, emissive = 0x000000, emissiveIntensity = 0) {
+    const material = new THREE.MeshStandardMaterial({ color, metalness, roughness, emissive, emissiveIntensity });
+    this.materials.add(material);
+    return material;
+  }
+
+  mesh(geometry, material, parent, x = 0, y = 0, z = 0, id) {
+    this.geometries.add(geometry);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    if (id) mesh.userData.id = id;
+    parent.add(mesh);
+    return mesh;
+  }
+
+  box(parent, w, h, d, x, y, z, material, id, radius = .015) {
+    const geometry = radius > 0
+      ? new RoundedBoxGeometry(w, h, d, 1, Math.min(radius, h / 3, w / 3, d / 3))
+      : new THREE.BoxGeometry(w, h, d);
+    return this.mesh(geometry, material, parent, x, y, z, id);
+  }
+
+  group(parent, id, level, position = [0, 0, 0]) {
+    const group = new THREE.Group();
+    group.position.set(...position);
+    group.userData.id = id;
+    parent.add(group);
+    if (level) {
+      this.targets[level] ??= {};
+      this.targets[level][id] ??= group;
+    }
+    return group;
+  }
+
+  line(parent, points, material = this.mats.trace) {
+    const geometry = new THREE.BufferGeometry().setFromPoints(points.map((point) => new THREE.Vector3(...point)));
+    this.geometries.add(geometry);
+    const line = new THREE.Line(geometry, material);
+    parent.add(line);
+    return line;
+  }
+
+  label(level, anchor, id, text, position, offset = [0, 0]) {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'scene-label';
+    el.textContent = text;
+    el.setAttribute('aria-label', `查看 ${text} 组件`);
+    el.addEventListener('pointerdown', (event) => event.stopPropagation());
+    el.addEventListener('click', () => { this.setSelected(id); this.onSelect(id); });
+    this.labelLayer.appendChild(el);
+    this.labels.push({ level, anchor, id, el, position: new THREE.Vector3(...position), offset });
+  }
+
+  explosion(group, height) {
+    this.explodeParts.push({ group, base: group.position.y, height });
+  }
+
+  createGround() {
+    const groundMat = new THREE.ShadowMaterial({ color: 0x020b06, opacity: .32 });
+    this.materials.add(groundMat);
+    const floor = this.mesh(new THREE.PlaneGeometry(200, 200), groundMat, this.scene, 0, -.31, 0);
+    floor.rotation.x = -Math.PI / 2;
+    floor.castShadow = false;
+    const grid = new THREE.GridHelper(26, 40, 0x3d5747, 0x304039);
+    grid.position.y = -.305;
+    grid.material.transparent = true;
+    grid.material.opacity = .12;
+    this.scene.add(grid);
+    this.groundGrid = grid;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(5.7, 5.712, 128), new THREE.MeshBasicMaterial({ color: 0x57664e, transparent: true, opacity: .16, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = -.3;
+    this.scene.add(ring);
+    this.geometries.add(ring.geometry);
+    this.materials.add(ring.material);
+  }
+
+  createPackage() {
+    const root = this.groups.package = this.group(this.scene, 'package');
+    const board = this.group(root, 'substrate', 'package');
+    this.box(board, 7.3, .1, 6.3, 0, -.16, 0, this.mats.graphite, 'substrate', .08);
+    this.box(board, 7.22, .07, 6.22, 0, -.075, 0, this.mats.metal, 'substrate', .07);
+    this.box(board, 7.12, .12, 6.12, 0, .015, 0, this.mats.board, 'substrate', .055);
+    this.box(board, 6.86, .025, 5.85, 0, .087, 0, this.mats.boardEdge, 'substrate', .035);
+    // Distinct circuit board layers around the module's exposed edge.
+    for (const y of [-.01, .025, .06]) {
+      const edge = this.box(board, 7.125, .008, 6.125, 0, y, 0, this.mats.gold, 'substrate', .035);
+      edge.material = this.mats.graphite;
+    }
+    for (const x of [-3.3, 3.3]) for (const z of [-2.78, 2.78]) {
+      this.mesh(new THREE.CylinderGeometry(.148, .148, .03, 24), this.mats.metal, board, x, .097, z, 'substrate');
+      this.mesh(new THREE.CylinderGeometry(.103, .103, .034, 24), this.mats.dark, board, x, .116, z, 'substrate');
+      this.mesh(new THREE.CylinderGeometry(.073, .073, .04, 6), this.mats.graphite, board, x, .137, z, 'substrate');
+      this.box(board, .092, .008, .013, x, .161, z, this.mats.metal, 'substrate', 0);
+    }
+
+    // Gold signal routing and surface-mount components.
+    for (let side = -1; side <= 1; side += 2) {
+      for (let i = 0; i < 28; i++) {
+        const z = -2.45 + i * .18;
+        const x0 = side * 2.72;
+        const x1 = side * (2.88 + (i % 3) * .08);
+        const x2 = side * 3.19;
+        this.line(board, [[x0, .106, z], [x1, .106, z], [x1 + side * .1, .106, z + .07], [x2, .106, z + .07]]);
+        this.box(board, .1, .07, .055, side * 3.04, .145, z, i % 5 ? this.mats.gold : this.mats.graphite, 'substrate', .007);
+      }
+      for (let i = 0; i < 19; i++) {
+        const x = -2.63 + i * .29;
+        for (const z of [-2.6, 2.6]) {
+          const chip = this.box(board, .17, .07, .105, x, .13, z + side * .12, this.mats.graphite, 'substrate', .01);
+          this.box(board, .025, .075, .106, x - .069, .13, z + side * .12, this.mats.metal, 'substrate', .004);
+          this.box(board, .025, .075, .106, x + .069, .13, z + side * .12, this.mats.metal, 'substrate', .004);
+          chip.castShadow = false;
+        }
+      }
+    }
+
+    const interposer = this.group(root, 'gpu', 'package', [0, .09, 0]);
+    this.box(interposer, 5.55, .095, 4.85, 0, .05, 0, this.mats.gold, 'gpu', .06);
+    this.box(interposer, 5.46, .13, 4.76, 0, .135, 0, this.mats.interposer, 'gpu', .045);
+    this.box(interposer, 5.31, .025, 4.6, 0, .212, 0, this.mats.graphite, 'gpu', .025);
+    // Small, regularly spaced routing contacts highlight the scale of packaging.
+    for (let i = 0; i < 42; i++) {
+      const x = -2.52 + i * .123;
+      for (const z of [-2.31, 2.31]) this.box(interposer, .04, .018, .065, x, .234, z, this.mats.gold, 'gpu', 0);
+    }
+    this.explosion(interposer, .45);
+
+    const gpu = this.group(interposer, 'gpu', null, [0, .23, 0]);
+    this.targets.package.gpu = gpu;
+    this.box(gpu, 3.25, .06, 3.94, 0, .035, 0, this.mats.metal, 'gpu', .04);
+    this.box(gpu, 3.14, .105, 3.83, 0, .111, 0, this.mats.silicon, 'gpu', .026);
+    this.box(gpu, 2.96, .012, 3.65, 0, .17, 0, this.mats.tileDark, 'gpu', .015);
+    for (let col = 0; col < 6; col++) for (let row = 0; row < 8; row++) {
+      const x = -1.208 + col * .484;
+      const z = -1.57 + row * .448;
+      this.box(gpu, .432, .035, .386, x, .195, z, (row + col) % 5 === 0 ? this.mats.lime : this.mats.tile, 'gpu', .009);
+      for (let line = 0; line < 4; line++) {
+        this.line(gpu, [[x - .175, .215, z - .125 + line * .079], [x + .175, .215, z - .125 + line * .079]], this.mats.etch);
+      }
+    }
+    for (let i = 0; i < 7; i++) {
+      this.box(gpu, .026, .01, 3.58, -1.45 + i * .484, .216, 0, this.mats.lime, 'gpu', 0);
+    }
+    this.explosion(gpu, .75);
+    this.label('package', gpu, 'gpu', 'HOPPER GPU', [0, .38, -.25], [0, -7]);
+
+    const memories = this.group(interposer, 'hbm', 'package');
+    for (const x of [-2.12, 2.12]) for (let i = 0; i < 3; i++) {
+      const z = (i - 1) * 1.435;
+      const memory = this.group(memories, 'hbm', null, [x, .25, z]);
+      this.box(memory, .83, .06, 1.21, 0, 0, 0, this.mats.gold, 'hbm', .025);
+      for (let layer = 0; layer < 5; layer++) {
+        this.box(memory, .75, .048, 1.105, 0, .057 + layer * .052, 0, layer === 4 ? this.mats.memory : this.mats.graphite, 'hbm', .012);
+        this.box(memory, .752, .009, 1.11, 0, .083 + layer * .052, 0, this.mats.metal, 'hbm', .008);
+      }
+      this.box(memory, .67, .018, 1.02, 0, .32, 0, this.mats.memory, 'hbm', .02);
+      for (let j = 0; j < 7; j++) this.line(memory, [[-.25, .333, -.37 + j * .12], [.25, .333, -.37 + j * .12]], this.mats.etch);
+      this.box(memory, .095, .009, .095, -.22, .335, -.36, this.mats.metal, 'hbm', .006);
+    }
+    this.explosion(memories, 1.0);
+    this.label('package', memories, 'hbm', 'HBM3 MEMORY', [2.11, .66, .18], [21, -2]);
+
+    const nvlink = this.group(root, 'nvlink', 'package', [0, .15, -2.84]);
+    this.box(nvlink, 3.18, .16, .29, 0, 0, 0, this.mats.graphite, 'nvlink', .018);
+    for (let i = 0; i < 40; i++) this.box(nvlink, .045, .04, .21, -1.48 + i * .076, .1, -.025, this.mats.gold, 'nvlink', .003);
+    this.box(nvlink, 3.25, .035, .048, 0, .13, .12, this.mats.metal, 'nvlink', .004);
+    this.label('package', nvlink, 'nvlink', 'NVLINK 4.0', [0, .24, -.12], [10, -25]);
+
+    const pcie = this.group(root, 'pcie', 'package', [0, .06, 3.1]);
+    this.box(pcie, 3.6, .085, .29, 0, 0, 0, this.mats.boardEdge, 'pcie', .012);
+    for (let i = 0; i < 44; i++) {
+      if (i === 12 || i === 13) continue;
+      this.box(pcie, .051, .018, .285, -1.72 + i * .08, .055, .025, this.mats.gold, 'pcie', .003);
+    }
+    this.label('package', pcie, 'pcie', 'PCIe 5.0 I/O', [0, .1, .16], [-2, 31]);
+    this.label('package', board, 'substrate', 'SXM MODULE', [-2.95, .19, 1.8], [-37, 18]);
+    this.addFlow(root, 'package', [new THREE.Vector3(0, .55, 0), new THREE.Vector3(2.1, .67, 0)], 4);
+    this.addFlow(root, 'package', [new THREE.Vector3(0, .55, 0), new THREE.Vector3(-2.1, .67, 0)], 4);
+    this.addFlow(root, 'package', [new THREE.Vector3(0, .55, -1.7), new THREE.Vector3(0, .34, -2.8)], 3);
+  }
+
+  createDie() {
+    const root = this.groups.die = this.group(this.scene, 'die');
+    const substrate = this.group(root, 'gpu', 'die');
+    this.box(substrate, 7.02, .14, 5.55, 0, -.09, 0, this.mats.graphite, 'gpu', .06);
+    this.box(substrate, 6.88, .055, 5.4, 0, .015, 0, this.mats.metal, 'gpu', .04);
+    this.box(substrate, 6.73, .15, 5.24, 0, .105, 0, this.mats.silicon, 'gpu', .035);
+    this.box(substrate, 6.48, .025, 4.98, 0, .192, 0, this.mats.board, 'gpu', .018);
+    const gpcs = this.group(root, 'gpc', 'die');
+    for (let row = 0; row < 2; row++) for (let col = 0; col < 3; col++) {
+      const x = -2.1 + col * 2.1;
+      const z = -.99 + row * 1.98;
+      const gpc = this.group(gpcs, 'gpc', null, [x, .24, z]);
+      this.box(gpc, 1.88, .075, 1.66, 0, 0, 0, this.mats.interposer, 'gpc', .025);
+      this.box(gpc, 1.72, .04, 1.5, 0, .056, 0, this.mats.silicon, 'gpc', .012);
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) {
+        const sm = this.group(gpc, 'sm', null, [-.64 + i * .426, .1, -.38 + j * .75]);
+        this.targets.die.sm ??= sm;
+        this.box(sm, .36, .1, .6, 0, 0, 0, this.mats.tile, 'sm', .015);
+        this.box(sm, .13, .015, .48, -.075, .06, 0, this.mats.lime, 'sm', .005);
+        for (let k = 0; k < 5; k++) this.box(sm, .13, .012, .04, .09, .06, -.21 + k * .1, this.mats.mint, 'sm', 0);
+      }
+      this.box(gpc, 1.52, .02, .065, 0, .12, .708, this.mats.gold, 'gpc', .006);
+    }
+    this.explosion(gpcs, .9);
+    const l2 = this.group(root, 'l2', 'die', [0, .28, 0]);
+    this.box(l2, 6.3, .12, .27, 0, 0, 0, this.mats.lime, 'l2', .02);
+    for (let i = 0; i < 36; i++) this.box(l2, .012, .015, .19, -3 + i * .171, .07, 0, this.mats.silicon, 'l2', 0);
+    this.explosion(l2, .48);
+    const memory = this.group(root, 'hbm', 'die');
+    for (const z of [-2.25, 2.25]) {
+      for (let i = 0; i < 12; i++) {
+        const x = -2.8 + i * .51;
+        this.box(memory, .43, .12, .28, x, .28, z, this.mats.mint, 'hbm', .008);
+        for (let j = 0; j < 3; j++) this.box(memory, .31, .013, .026, x, .348, z - .07 + j * .07, this.mats.metal, 'hbm', 0);
+      }
+    }
+    this.label('die', gpcs, 'gpc', 'GRAPHICS PROCESSING CLUSTER', [-2.1, .64, -.99], [-5, -18]);
+    this.label('die', this.targets.die.sm, 'sm', 'STREAMING MULTIPROCESSOR', [0, .2, 0], [-48, 62]);
+    this.label('die', l2, 'l2', 'L2 CACHE', [1.6, .18, 0], [33, -12]);
+    this.label('die', memory, 'hbm', 'HBM INTERFACE', [1.5, .48, 2.25], [6, 29]);
+    this.addFlow(root, 'die', [new THREE.Vector3(-2.8, .57, 0), new THREE.Vector3(2.8, .57, 0)], 9);
+  }
+
+  createSM() {
+    const root = this.groups.sm = this.group(this.scene, 'sm');
+    const base = this.group(root, 'sm', 'sm');
+    this.box(base, 6.8, .12, 5.5, 0, -.09, 0, this.mats.graphite, 'sm', .055);
+    this.box(base, 6.65, .045, 5.35, 0, 0, 0, this.mats.metal, 'sm', .035);
+    this.box(base, 6.5, .13, 5.2, 0, .09, 0, this.mats.silicon, 'sm', .025);
+    this.box(base, 6.24, .025, 4.94, 0, .17, 0, this.mats.board, 'sm', .015);
+    const cudaGroup = this.group(root, 'cuda', 'sm');
+    const tensorGroup = this.group(root, 'tensor', 'sm');
+    const schedulerGroup = this.group(root, 'scheduler', 'sm');
+    const shared = this.group(root, 'shared', 'sm');
+    for (let partition = 0; partition < 4; partition++) {
+      const x = -2.3 + partition * 1.53;
+      this.box(base, 1.39, .04, 3.92, x, .212, -.17, this.mats.interposer, 'sm', .018);
+      this.box(schedulerGroup, 1.23, .15, .39, x, .32, -1.82, this.mats.mint, 'scheduler', .018);
+      for (let i = 0; i < 8; i++) this.box(schedulerGroup, .09, .012, .26, x - .49 + i * .14, .4, -1.82, this.mats.metal, 'scheduler', .004);
+      for (let col = 0; col < 4; col++) for (let row = 0; row < 6; row++) {
+        this.box(cudaGroup, .232, .12, .25, x - .432 + col * .288, .31, -1.2 + row * .33, (row + col) % 4 === 0 ? this.mats.lime : this.mats.tile, 'cuda', .01);
+        this.box(cudaGroup, .16, .01, .018, x - .432 + col * .288, .377, -1.2 + row * .33, this.mats.metal, 'cuda', 0);
+      }
+      const tensor = this.group(tensorGroup, 'tensor', null, [x, .34, 1.11]);
+      this.box(tensor, 1.2, .18, .69, 0, 0, 0, this.mats.lime, 'tensor', .018);
+      this.box(tensor, .96, .015, .47, 0, .099, 0, this.mats.tileDark, 'tensor', .01);
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) this.box(tensor, .17, .017, .16, -.32 + i * .215, .115, -.1 + j * .2, this.mats.lime, 'tensor', .003);
+      this.box(shared, 1.2, .09, .28, x, .29, 1.72, this.mats.graphite, 'shared', .012);
+      for (let i = 0; i < 13; i++) this.box(shared, .045, .018, .19, x - .51 + i * .085, .346, 1.72, this.mats.metal, 'shared', .003);
+    }
+    this.box(shared, 5.98, .15, .37, 0, .3, 2.22, this.mats.mint, 'shared', .018);
+    for (let i = 0; i < 52; i++) this.box(shared, .015, .016, .25, -2.85 + i * .112, .384, 2.22, this.mats.silicon, 'shared', 0);
+    this.explosion(cudaGroup, .65);
+    this.explosion(tensorGroup, 1.1);
+    this.explosion(schedulerGroup, .4);
+    this.explosion(shared, .25);
+    this.label('sm', cudaGroup, 'cuda', 'CUDA CORES', [-1.5, .54, -.7], [-12, -12]);
+    this.label('sm', tensorGroup, 'tensor', 'TENSOR CORES', [2.3, .55, 1.11], [37, 5]);
+    this.label('sm', schedulerGroup, 'scheduler', 'WARP SCHEDULERS', [1.53, .49, -1.82], [0, -30]);
+    this.label('sm', shared, 'shared', 'SHARED MEMORY / L1', [-1, .47, 2.22], [0, 35]);
+    for (let i = 0; i < 4; i++) this.addFlow(root, 'sm', [new THREE.Vector3(-2.3 + i * 1.53, .6, -1.7), new THREE.Vector3(-2.3 + i * 1.53, .6, 2.2)], 4);
+  }
+
+  addFlow(parent, level, points, count) {
+    const group = new THREE.Group();
+    group.userData.dynamic = true;
+    group.visible = false;
+    parent.add(group);
+    this.flowGroups.push({ group, level });
+    const material = new THREE.LineBasicMaterial({ color: 0xb6ee78, transparent: true, opacity: .25 });
+    this.materials.add(material);
+    this.line(group, points.map(p => p.toArray()), material);
+    const curve = new THREE.LineCurve3(points[0], points[points.length - 1]);
+    const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xdcffa4 });
+    this.materials.add(dotMaterial);
+    for (let i = 0; i < count; i++) {
+      const dot = this.mesh(new THREE.SphereGeometry(.034, 8, 6), dotMaterial, group);
+      dot.castShadow = false;
+      dot.receiveShadow = false;
+      this.flowDots.push({ dot, level, curve, phase: i / count });
+    }
+  }
+
+  batchStaticGeometry() {
+    // Keep raycast ids and independently movable layers while cutting draw calls.
+    for (const root of Object.values(this.groups)) root.traverse(parent => {
+      if (parent.userData.dynamic || !parent.isGroup) return;
+      const batches = new Map();
+      for (const child of parent.children) {
+        if (!child.isMesh || child.isInstancedMesh || Array.isArray(child.material)) continue;
+        const key = `${child.material.uuid}:${child.userData.id || ''}`;
+        if (!batches.has(key)) batches.set(key, []);
+        batches.get(key).push(child);
+      }
+      for (const children of batches.values()) {
+        if (children.length < 3) continue;
+        const geometries = children.map(child => {
+          child.updateMatrix();
+          const geometry = child.geometry.index ? child.geometry.toNonIndexed() : child.geometry.clone();
+          return geometry.applyMatrix4(child.matrix);
+        });
+        const merged = mergeGeometries(geometries, false);
+        geometries.forEach(geometry => geometry.dispose());
+        if (!merged) continue;
+        const mesh = this.mesh(merged, children[0].material, parent, 0, 0, 0, children[0].userData.id);
+        mesh.castShadow = children.some(child => child.castShadow);
+        for (const child of children) parent.remove(child);
+      }
+      const lineBatches = new Map();
+      for (const child of parent.children) {
+        if (!child.isLine || child.isLineSegments) continue;
+        const key = child.material.uuid;
+        if (!lineBatches.has(key)) lineBatches.set(key, []);
+        lineBatches.get(key).push(child);
+      }
+      for (const children of lineBatches.values()) {
+        if (children.length < 3) continue;
+        const positions = [];
+        for (const child of children) {
+          child.updateMatrix();
+          const points = child.geometry.getAttribute('position');
+          for (let i = 0; i < points.count - 1; i++) {
+            for (const index of [i, i + 1]) {
+              const point = new THREE.Vector3().fromBufferAttribute(points, index).applyMatrix4(child.matrix);
+              positions.push(point.x, point.y, point.z);
+            }
+          }
+          parent.remove(child);
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        this.geometries.add(geometry);
+        parent.add(new THREE.LineSegments(geometry, children[0].material));
+      }
+    });
+  }
+
+  pick(event) {
+    if (!this.renderer || !this.groups[this.level]) return null;
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.mouse.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersections = this.raycaster.intersectObject(this.groups[this.level], true);
+    for (const intersection of intersections) {
+      let obj = intersection.object;
+      if (!(obj instanceof THREE.Mesh)) continue;
+      while (obj && obj !== this.scene) {
+        if (obj.userData.id && obj.userData.id !== 'package' && obj.userData.id !== 'die') return obj.userData.id;
+        obj = obj.parent;
+      }
+    }
+    return null;
+  }
+
+  setLevel(level) {
+    if (!['package', 'die', 'sm'].includes(level)) return;
+    this.level = level;
+    if (!this.renderer) return;
+    for (const [name, group] of Object.entries(this.groups)) group.visible = name === level;
+    this.setSelected(level === 'package' ? 'gpu' : level === 'die' ? 'gpc' : 'tensor');
+    this.updateLabels();
+  }
+
+  setSelected(id) {
+    this.selected = id;
+    for (const label of this.labels) label.el.classList.toggle('is-selected', label.id === id);
+    if (this.selectionBox) this.selectionBox.visible = id !== 'gpu' && !!this.targets[this.level]?.[id];
+  }
+
+  setExploded(value) { this.exploded = !!value; }
+  setLabels(value) { this.labelsVisible = !!value; this.updateLabels(); }
+  setAutoRotate(value) {
+    this.autoRotate = !!value;
+    if (this.controls) this.controls.autoRotate = this.autoRotate && !this.reducedMotion;
+  }
+  setDataFlow(value) { this.dataFlow = !!value; }
+
+  setView(view = 'iso') {
+    if (!this.camera) return;
+    const positions = { iso: [9, 9.4, 11], top: [.001, 15, .001], front: [0, 7.5, 14] };
+    this.camera.position.set(...(positions[view] || positions.iso));
+    this.controls.target.set(0, .35, 0);
+    this.camera.lookAt(this.controls.target);
+    this.controls.update();
+    this.updateLabels();
+  }
+
+  reset() {
+    if (!this.camera) return;
+    this.camera.zoom = 1;
+    this.camera.updateProjectionMatrix();
+    this.setView('iso');
+  }
+
+  zoom(amount = 1) {
+    if (!this.camera) return;
+    this.camera.zoom = THREE.MathUtils.clamp(this.camera.zoom * (amount > 0 ? 1.16 : 1 / 1.16), .65, 3.4);
+    this.camera.updateProjectionMatrix();
+  }
+
+  resize() {
+    if (!this.renderer || this.disposed) return;
+    const width = Math.max(1, this.container.clientWidth);
+    const height = Math.max(1, this.container.clientHeight);
+    const aspect = width / height;
+    const vertical = Math.max(8.55, 10.9 / aspect);
+    this.camera.left = -vertical * aspect / 2;
+    this.camera.right = vertical * aspect / 2;
+    this.camera.top = vertical / 2;
+    this.camera.bottom = -vertical / 2;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height, false);
+    this.updateLabels();
+  }
+
+  updateLabels() {
+    if (!this.camera) return;
+    const width = this.container.clientWidth;
+    const height = this.container.clientHeight;
+    this.scene.updateMatrixWorld();
+    for (const label of this.labels) {
+      const visible = label.level === this.level && this.labelsVisible;
+      label.el.style.display = visible ? 'flex' : 'none';
+      if (!visible) continue;
+      this.tempVector.copy(label.position);
+      label.anchor.localToWorld(this.tempVector);
+      this.tempVector.project(this.camera);
+      const x = (this.tempVector.x * .5 + .5) * width + label.offset[0];
+      const y = (-this.tempVector.y * .5 + .5) * height + label.offset[1];
+      const boxWidth = label.el.offsetWidth;
+      const clampedX = Math.max(boxWidth / 2 + 8, Math.min(width - boxWidth / 2 - 8, x));
+      label.el.style.transform = `translate(${clampedX}px,${Math.max(20, Math.min(height - 20, y))}px) translate(-50%,-50%)`;
+      label.el.style.opacity = this.tempVector.z > 1 || this.tempVector.z < -1 ? '0' : '1';
+    }
+  }
+
+  animate() {
+    if (this.disposed || !this.renderer) return;
+    this.animationFrame = requestAnimationFrame(() => this.animate());
+    const delta = Math.min(this.clock.getDelta(), .05);
+    this.elapsed = (this.elapsed || 0) + delta;
+    for (const part of this.explodeParts) {
+      const target = part.base + (this.exploded ? part.height : 0);
+      part.group.position.y = this.reducedMotion ? target : THREE.MathUtils.damp(part.group.position.y, target, 7, delta);
+    }
+    for (const flow of this.flowGroups) flow.group.visible = this.dataFlow && flow.level === this.level;
+    if (this.dataFlow) for (const flow of this.flowDots) {
+      if (flow.level !== this.level) continue;
+      flow.curve.getPointAt((flow.phase + (this.reducedMotion ? 0 : this.elapsed * .18)) % 1, flow.dot.position);
+    }
+    this.controls.update();
+    const target = this.targets[this.level]?.[this.selected];
+    if (target && this.selectionBox.visible) {
+      this.selectionBox.box.setFromObject(target);
+      this.selectionBox.box.expandByScalar(.07);
+    }
+    this.updateLabels();
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  getCanvas() { return this.renderer?.domElement || null; }
+
+  dispose() {
+    this.disposed = true;
+    cancelAnimationFrame(this.animationFrame);
+    this.resizeObserver?.disconnect();
+    this.controls?.dispose();
+    const canvas = this.renderer?.domElement;
+    if (canvas) {
+      canvas.removeEventListener('pointerdown', this.pointerDown);
+      canvas.removeEventListener('pointerup', this.pointerUp);
+      canvas.removeEventListener('pointermove', this.pointerMove);
+      canvas.removeEventListener('pointerleave', this.pointerLeave);
+      canvas.remove();
+    }
+    this.scene?.traverse((object) => {
+      if (object.geometry) this.geometries.add(object.geometry);
+      if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => this.materials.add(material));
+    });
+    for (const geometry of this.geometries) geometry.dispose();
+    for (const material of this.materials) material.dispose();
+    this.environment?.dispose();
+    this.renderer?.dispose();
+    this.labelLayer.remove();
+    this.style.remove();
+    this.fallback?.remove();
+  }
+}
