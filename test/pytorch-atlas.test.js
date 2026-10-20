@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { PYTORCH_NODES, PYTORCH_LAYERS, PYTORCH_DOMAINS, PYTORCH_MODULES, PYTORCH_RELATIONS, getPytorchNode, getPytorchTrail, getPytorchScope, getPytorchDescendants, getPytorchScene, searchPytorch, parsePytorchRoute } from '../src/pytorch-data.js';
+import { PYTORCH_NODES, PYTORCH_LAYERS, PYTORCH_DOMAINS, PYTORCH_MODULES, getPytorchNode, getPytorchTrail, getPytorchScope, getPytorchDescendants, getPytorchScene, searchPytorch, parsePytorchRoute } from '../src/pytorch-data.js';
+import { PYTORCH_RELATIONS, PYTORCH_RELATION_TYPES, getPytorchRelations, projectPytorchRelations, getPytorchRelationView, describePytorchDirection } from '../src/pytorch-relations.js';
 import { layoutPytorchBands } from '../src/pytorch-scene.js';
 const index=JSON.parse(fs.readFileSync(new URL('../src/pytorch-source-index.json',import.meta.url),'utf8'));
 
@@ -49,7 +50,39 @@ test('source path search resolves deep modules without inventing call relationsh
   assert.ok(searchPytorch('CUDA').some(n=>n.id==='cuda'));
   assert.ok(searchPytorch('量化').some(n=>n.id==='quantization'));
   assert.deepEqual(searchPytorch('not-a-real-module-123'),[]);
-  for(const relation of PYTORCH_RELATIONS){assert.equal(getPytorchNode(relation.from).kind,'domain');assert.equal(getPytorchNode(relation.to).kind,'domain');assert.ok(relation.detail);}
+  for(const relation of PYTORCH_RELATIONS){assert.equal(getPytorchNode(relation.from).kind,'module');assert.equal(getPytorchNode(relation.to).kind,'module');assert.ok(relation.detail);assert.ok(relation.condition);assert.ok(PYTORCH_RELATION_TYPES[relation.type]);assert.ok(relation.evidence.path);assert.ok(relation.evidence.line>0);}
+});
+
+test('overview projects module connections onto subsystems without inventing self calls',()=>{
+  const root=projectPytorchRelations(getPytorchScene('pytorch'));
+  assert.ok(root.some(e=>e.from==='models'&&e.to==='bindings'));
+  assert.ok(root.some(e=>e.from==='dispatch'&&e.to==='cpu'));
+  assert.ok(root.some(e=>e.from==='dispatch'&&e.to==='cuda'));
+  assert.ok(root.every(e=>e.from!==e.to));
+  const compile=projectPytorchRelations(getPytorchScene('graphs'));
+  assert.ok(compile.some(e=>e.from==='inductor-lowering'&&e.to==='inductor-scheduling'));
+  assert.ok(compile.some(e=>e.from==='aot-aotgraph'&&e.to==='inductor-compilefx'));
+  const leaf=projectPytorchRelations(getPytorchScene('inductor'));
+  assert.ok(leaf.every(e=>e.from.startsWith('inductor-')&&e.to.startsWith('inductor-')));
+  assert.ok(!leaf.flatMap(e=>e.members).some(r=>r.to==='aot-aotentry'));
+  assert.ok(getPytorchRelations('inductor-compilefx').some(r=>r.to==='aot-aotentry'),'cross-view relations remain available for navigation');
+});
+
+test('focus, direction, type and hidden states preserve direct neighbors',()=>{
+  const bands=getPytorchScene('inductor'),selected='inductor-lowering';
+  const focus=getPytorchRelationView(bands,selected);
+  assert.equal(focus.neighbors.get('inductor-compilefx'),'upstream');
+  assert.equal(focus.neighbors.get('inductor-scheduling'),'downstream');
+  assert.ok(!focus.edges.some(e=>e.from==='inductor-scheduling'&&e.to==='inductor-codegen'),'do not imply transitive neighbors are direct');
+  assert.ok(getPytorchRelationView(bands,selected,{mode:'all'}).edges.length>focus.edges.length);
+  assert.ok(getPytorchRelationView(bands,selected,{type:'compile'}).edges.every(e=>e.type==='compile'));
+  assert.equal(getPytorchRelationView(bands,selected,{enabled:false}).edges.length,0);
+  const cross=getPytorchRelations('data-dataloader').find(r=>r.to==='models-layers');
+  assert.equal(cross.basis,'usage');assert.equal(describePytorchDirection(cross,'models'),'上游 / 来自');
+  assert.equal(describePytorchDirection(cross,'data'),'下游 / 指向');
+  assert.equal(new Set(PYTORCH_RELATIONS.map(r=>r.id)).size,PYTORCH_RELATIONS.length);
+  const bidirectional=getPytorchRelationView(getPytorchScene('pytorch'),'inductor');
+  assert.equal(bidirectional.neighbors.get('aot'),'both');
 });
 
 test('scoped 3D scenes preserve containment and have distinct finite positions',()=>{

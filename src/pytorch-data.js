@@ -164,19 +164,6 @@ for(const [id] of layers) PYTORCH_NODES[id].paths=[...new Set(PYTORCH_NODES[id].
 export const PYTORCH_LAYERS=layers.map(([id])=>PYTORCH_NODES[id]);
 export const PYTORCH_DOMAINS=domains.map(([id])=>PYTORCH_NODES[id]);
 export const PYTORCH_MODULES=Object.values(PYTORCH_NODES).filter(n=>n.kind==='module');
-export const PYTORCH_RELATIONS=[
-  {from:'models',to:'aten',label:'算子入口',detail:'模型组件通过操作接口连接 ATen；中间存在绑定与分发。'},
-  {from:'data',to:'models',label:'批次输入',detail:'数据管道向模型提供批次；由使用者代码组织。'},
-  {from:'autograd',to:'training',label:'梯度供给',detail:'梯度可由优化器用于更新参数。'},
-  {from:'dynamo',to:'capture',label:'FX 图表示',detail:'Dynamo 使用 FX 表示捕获的子图。'},
-  {from:'dynamo',to:'inductor',label:'后端协作',detail:'默认后端为 Inductor；其他后端可能采用不同路径。'},
-  {from:'inductor',to:'aot',label:'图编译协作',detail:'Inductor 与 AOTAutograd 协作，训练与推理有不同分支。'},
-  {from:'aten',to:'dispatch',label:'算子分发',detail:'操作接口通过分发机制选择实现；不是按目录顺序执行。'},
-  {from:'dispatch',to:'cuda',label:'设备候选',detail:'CUDA 是可能的设备实现之一，还受布局和其他调度状态影响。'},
-  {from:'dispatch',to:'cpu',label:'设备候选',detail:'CPU 是可能的设备实现之一，具体实现由条件决定。'},
-  {from:'distributed',to:'otherdevices',label:'设备扩展',detail:'通信后端与设备配置相关；第三方设备支持需单独核实。'}
-];
-
 export function getPytorchNode(id){return Object.hasOwn(PYTORCH_NODES,id)?PYTORCH_NODES[id]:PYTORCH_NODES.pytorch;}
 export function getPytorchTrail(id){const result=[];let node=getPytorchNode(id);while(node){result.unshift(node);node=node.parent?getPytorchNode(node.parent):null;}return result;}
 export function getPytorchScope(id){const node=getPytorchNode(id);return node.kind==='module'?getPytorchNode(node.parent):node;}

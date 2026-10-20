@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { PYTORCH_RELATIONS } from './pytorch-data.js';
+import { PYTORCH_RELATION_TYPES, projectPytorchRelations, getPytorchRelationView } from './pytorch-relations.js';
 
 export function layoutPytorchBands(bands,spacing=1){
   return bands.map((band,index)=>{
@@ -11,9 +11,9 @@ export function layoutPytorchBands(bands,spacing=1){
 }
 
 export class PytorchScene {
-  constructor(container,{onSelect=()=>{},onEnter=()=>{},onHover=()=>{}}={}){
-    this.container=container;this.onSelect=onSelect;this.onEnter=onEnter;this.onHover=onHover;
-    this.spacing=1;this.labelsVisible=true;this.showRelations=false;this.labels=[];this.shelves=[];this.targets=new Map();this.resources=[];this.disposed=false;
+  constructor(container,{onSelect=()=>{},onEnter=()=>{},onHover=()=>{},onRelation=()=>{}}={}){
+    this.container=container;this.onSelect=onSelect;this.onEnter=onEnter;this.onHover=onHover;this.onRelation=onRelation;
+    this.spacing=1;this.labelsVisible=true;this.showRelations=true;this.relationOptions={mode:'focus',type:'all'};this.edgeLabels=[];this.edgeObjects=[];this.labels=[];this.shelves=[];this.targets=new Map();this.resources=[];this.disposed=false;
     this.reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
     try{this.renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});}catch{return;}
     this.available=true;this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));this.renderer.setClearColor(0x0e172a,0);
@@ -49,7 +49,7 @@ export class PytorchScene {
     else{const dot=document.createElement('i'),name=document.createElement('span'),hint=document.createElement('small');name.textContent=node.name;hint.textContent=node.children.length?`${node.children.length} 个下级模块 ↗`:'功能模块';el.append(dot,name,hint);el.setAttribute('aria-label',`选择模块 ${node.name}`);el.onclick=()=>this.onSelect(node.id);el.ondblclick=()=>this.onEnter(node.id);}
     this.labelLayer.append(el);this.labels.push({anchor,el,id:node.id,kind});
   }
-  clear(){for(const resource of this.resources)resource.dispose();this.resources=[];this.model.clear();this.labelLayer.replaceChildren();this.labels=[];this.shelves=[];this.targets.clear();this.selection.visible=false;}
+  clear(){for(const resource of this.resources)resource.dispose();this.resources=[];this.model.clear();this.labelLayer.replaceChildren();this.labels=[];this.edgeLabels=[];this.edgeObjects=[];this.shelves=[];this.targets.clear();this.selection.visible=false;}
   setBands(bands){
     if(!this.available)return;this.clear();this.bands=bands;this.layout=layoutPytorchBands(bands,this.spacing);
     const edge=this.material(0x52627e,.68),silicon=this.material(0x162139),trace=0x8aa3cc;
@@ -79,14 +79,36 @@ export class PytorchScene {
   }
   buildRelations(){
     if(!this.relationGroup)return;
-    for(const relation of PYTORCH_RELATIONS){const from=this.targets.get(relation.from),to=this.targets.get(relation.to);if(!from||!to)continue;const a=from.group.parent.position.clone().add(from.group.position),b=to.group.parent.position.clone().add(to.group.position);a.y+=.5;b.y+=.5;
-      const curve=new THREE.CubicBezierCurve3(a,new THREE.Vector3(a.x-1,a.y+1,a.z+4),new THREE.Vector3(b.x+1,b.y+1,b.z+4),b);
-      this.line(this.relationGroup,curve.getPoints(35).map(p=>p.toArray()),0xd2a5f7,.52,true);
-    }this.relationGroup.visible=this.showRelations;
+    for(const [index,relation] of projectPytorchRelations(this.bands).entries()){
+      const from=this.targets.get(relation.from),to=this.targets.get(relation.to);
+      const a=from.group.parent.position.clone().add(from.group.position),b=to.group.parent.position.clone().add(to.group.position);a.y+=.4;b.y+=.4;a.z+=.8;b.z+=.8;
+      const lane=2.4+(index%3)*.6,sameLevel=Math.abs(a.y-b.y)<.1;
+      const curve=new THREE.CubicBezierCurve3(a,new THREE.Vector3(a.x,a.y+(sameLevel?.9:.25),a.z+lane),new THREE.Vector3(b.x,b.y+(sameLevel?.9:.25),b.z+lane),b);
+      const group=new THREE.Group(),color=PYTORCH_RELATION_TYPES[relation.type].color;
+      const material=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9,depthTest:false});
+      const tubeGeometry=new THREE.TubeGeometry(curve,40,.055,6,false),coneGeometry=new THREE.ConeGeometry(.22,.62,8);
+      this.resources.push(material,tubeGeometry,coneGeometry);
+      const tube=new THREE.Mesh(tubeGeometry,material),arrow=new THREE.Mesh(coneGeometry,material);tube.renderOrder=4;arrow.renderOrder=5;
+      arrow.position.copy(curve.getPoint(.88));arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),curve.getTangent(.88).normalize());
+      group.add(tube,arrow);this.relationGroup.add(group);
+      const anchor=new THREE.Object3D();anchor.position.copy(curve.getPoint(.5));group.add(anchor);
+      const el=document.createElement('button');el.type='button';el.className='pt-edge-label';el.style.setProperty('--edge-color',color);el.textContent=`→ ${relation.label}`;el.title=`${from.node.name} → ${to.node.name}：${relation.label}`;el.setAttribute('aria-label',`查看关系 ${el.title}`);el.onclick=()=>this.onRelation(relation);
+      this.labelLayer.append(el);this.edgeLabels.push({anchor,el,id:relation.id});this.edgeObjects.push({group,material,relation});
+    }
+    this.updateRelations();
   }
-  setSelected(id){this.selected=id;if(!this.available)return;for(const [key,target]of this.targets){target.material.emissiveIntensity=key===id ? .45 : .06;}for(const label of this.labels)label.el.classList.toggle('selected',label.id===id);const target=this.targets.get(id);this.selection.visible=!!target;if(target){this.model.updateMatrixWorld(true);this.selection.box.setFromObject(target.group).expandByScalar(.1);this.selection.material.color.set(target.node.color);}}
+  setSelected(id){this.selected=id;if(!this.available)return;const target=this.targets.get(id);this.selection.visible=!!target;if(target){this.model.updateMatrixWorld(true);this.selection.box.setFromObject(target.group).expandByScalar(.1);this.selection.material.color.set(target.node.color);}this.updateRelations();}
   setLabels(value){this.labelsVisible=value;if(this.labelLayer)this.labelLayer.hidden=!value;}
-  setRelations(value){this.showRelations=value;if(this.relationGroup)this.relationGroup.visible=value;}
+  setRelations(value,options={}){this.showRelations=value;this.relationOptions={...this.relationOptions,...options};this.updateRelations();}
+  updateRelations(){
+    if(!this.available||!this.relationGroup)return;
+    const {edges,neighbors}=getPytorchRelationView(this.bands,this.selected||'pytorch',{...this.relationOptions,enabled:this.showRelations}),active=new Set(edges.map(e=>e.id));
+    this.relationGroup.visible=this.showRelations;
+    for(const edge of this.edgeObjects){edge.group.visible=active.has(edge.relation.id);edge.material.opacity=this.relationOptions.edgeId&&edge.relation.members.some(r=>r.id===this.relationOptions.edgeId)?1:.6;}
+    for(const label of this.edgeLabels){const edge=this.edgeObjects.find(e=>e.relation.id===label.id),chosen=edge.relation.members.some(r=>r.id===this.relationOptions.edgeId);label.el.hidden=!active.has(label.id)||(this.relationOptions.mode==='all'&&!chosen);label.el.classList.toggle('active',chosen);}
+    for(const [key,target]of this.targets)target.material.emissiveIntensity=key===this.selected ? .45 : neighbors.has(key) ? .23 : .04;
+    for(const label of this.labels){label.el.classList.toggle('selected',label.id===this.selected);label.el.classList.toggle('pt-upstream',neighbors.get(label.id)==='upstream');label.el.classList.toggle('pt-downstream',neighbors.get(label.id)==='downstream');label.el.classList.toggle('pt-bidirectional',neighbors.get(label.id)==='both');label.el.classList.toggle('pt-unrelated',this.showRelations&&this.relationOptions.mode==='focus'&&this.targets.has(this.selected)&&label.kind==='node'&&label.id!==this.selected&&!neighbors.has(label.id));}
+  }
   setSpacing(value){this.spacing=value;if(!this.bands)return;this.setBands(this.bands);}
   pick(event){const rect=this.renderer.domElement.getBoundingClientRect();this.pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);this.raycaster.setFromCamera(this.pointer,this.camera);for(const hit of this.raycaster.intersectObject(this.model,true)){let object=hit.object;while(object){if(object.userData.id)return object.userData.id;object=object.parent;}}return null;}
   reset(view='iso'){
@@ -98,6 +120,8 @@ export class PytorchScene {
   animate(){
     if(this.disposed||!this.available)return;this.frame=requestAnimationFrame(()=>this.animate());if(!this.container.clientWidth||this.container.hidden)return;this.controls.update();this.camera.updateMatrixWorld(true);this.model.updateMatrixWorld(true);
     for(const label of this.labels){label.anchor.getWorldPosition(this.projected);this.projected.project(this.camera);const x=label.kind==='band'?12:(this.projected.x*.5+.5)*this.width,y=(-this.projected.y*.5+.5)*this.height;label.el.style.transform=`translate(${x}px,${y}px) translate(${label.kind==='band'?'0':'-50%'},-50%)`;label.el.style.visibility=this.projected.z>1||x<0||x>this.width||y<0||y>this.height?'hidden':'visible';}
+    const edgeRects=[];
+    for(const label of this.edgeLabels){if(label.el.hidden)continue;label.anchor.getWorldPosition(this.projected);this.projected.project(this.camera);const x=(this.projected.x*.5+.5)*this.width;let y=(-this.projected.y*.5+.5)*this.height;const w=label.el.offsetWidth,h=label.el.offsetHeight;for(let i=0;i<8&&edgeRects.some(r=>Math.abs(x-r.x)<(w+r.w)/2+4&&Math.abs(y-r.y)<(h+r.h)/2+4);i++)y+=h+5;edgeRects.push({x,y,w,h});label.el.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;label.el.style.visibility=this.projected.z>1||x<0||x>this.width||y<0||y>this.height?'hidden':'visible';}
     if(this.selection.visible){const target=this.targets.get(this.selected);if(target)this.selection.box.setFromObject(target.group).expandByScalar(.1);}
     this.renderer.render(this.scene,this.camera);
   }
