@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getGpuResourceTotals, getResourceReport, getComponentResourceInfo } from '../src/gpu-resources.js';
 import { GPU_RESOURCE_SPECS } from '../src/gpu-resource-specs.js';
-import { gpuList, getGpu } from '../src/gpu-profiles.js';
+import { gpuList, getGpu, getGpuComponents } from '../src/gpu-profiles.js';
 import { levels, components } from '../src/data.js';
 
 test('H20 and 132-SM products use their own SM count for distributed resource totals',()=>{
@@ -21,14 +21,14 @@ test('H20 and 132-SM products use their own SM count for distributed resource to
   assert.equal(h100.sharedBanks,4224);
   assert.equal(h100.warps,8448);
   assert.equal(h100.threads,270336);
-  for(const gpu of gpuList)assert.equal(getGpu(gpu.id).activeSMs,GPU_RESOURCE_SPECS[gpu.id].sms.value);
+  for(const gpu of gpuList.filter(g=>g.family==='hopper'))assert.equal(getGpu(gpu.id).activeSMs,GPU_RESOURCE_SPECS[gpu.id].sms.value);
 });
 
-test('all 24 resource reports expose six metrics, valid references and stable row identities',()=>{
+test('all 66 resource reports expose six metrics, valid references and stable row identities',()=>{
   const states=new Set(['verified','observed','reference','derived','unknown']);
   for(const gpu of gpuList)for(const level of Object.keys(levels)){
     const report=getResourceReport(gpu.id,level);
-    assert.equal(report.gpuName,gpu.name);
+    assert.ok(report.gpuName.includes(gpu.name));
     assert.ok(report.rows.length>=8);
     assert.equal(new Set(report.rows.map(r=>r.id)).size,report.rows.length,`${gpu.id}/${level}`);
     for(const scope of report.scopes){
@@ -38,7 +38,7 @@ test('all 24 resource reports expose six metrics, valid references and stable ro
     for(const row of report.rows){
       assert.ok(states.has(row.status));
       if(row.source)assert.match(row.source.url,/^https:\/\//);
-      if(row.component)assert.ok(components[row.component]);
+      if(row.component)assert.ok(getGpuComponents(gpu.id)[row.component],`${gpu.id}/${level}/${row.component}`);
     }
   }
 });
@@ -61,4 +61,24 @@ test('unified/shared capacities and local programming limits retain their distin
   assert.match(report.note,/不能相加/);
   assert.match(report.scopeNote,/不能作为一个跨 SM 统一分配/);
   assert.equal(getResourceReport('h200','warp').summary.gpu.find(x=>x.id==='lanes').value,'32');
+});
+
+test('new architectures aggregate their own compute and buffer resources',()=>{
+  const a100=getGpuResourceTotals('a100'),a40=getGpuResourceTotals('a40');
+  assert.equal(a100.smCount,108);
+  assert.equal(a100.fp32,6912);
+  assert.equal(a100.sharedKiB,108*164);
+  assert.equal(a40.fp32,10752);
+  assert.equal(a40.warps,84*48);
+  assert.equal(getGpuResourceTotals('rtx-5090d').fp32,21760);
+  const b4=getGpuResourceTotals('ascend-910b4'),c=getGpuResourceTotals('ascend-910c');
+  assert.equal(b4.l1KiB,20*512);
+  assert.equal(b4.ubKiB,40*192);
+  assert.equal(c.l1KiB,48*512);
+  assert.equal(c.ubKiB,96*192);
+  assert.equal(c.l0CKiB,48*128);
+  assert.equal(c.registers,null);
+  assert.equal(c.warps,null);
+  assert.equal(getResourceReport('rtx-5090d','shared').rows.find(r=>r.id==='bank-capacity').status,'unknown');
+  assert.equal(getComponentResourceInfo('ascend-910c','shared','bank').id,'ub');
 });

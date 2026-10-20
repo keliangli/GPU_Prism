@@ -1,6 +1,8 @@
 import { getGpu } from './gpu-profiles.js';
 import { levels } from './data.js';
 import { GPU_RESOURCE_SPECS, HOPPER_SM as SM, RESOURCE_SOURCES as S } from './gpu-resource-specs.js';
+import { getNvidiaResourceTotals, getNvidiaResourceReport } from './additional-resources.js';
+import { getAscendResourceTotals, getAscendResourceReport } from './ascend.js';
 
 const number=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
 const quantity=(n,unit)=>n===null?'未核实':`${number(n)} ${unit}`;
@@ -8,6 +10,14 @@ const mib=kiB=>`${number(kiB/1024)} MiB`;
 const local=(n,unit='个')=>`${quantity(n,unit)} / SM`;
 
 export function getComponentResourceInfo(gpuId,level,component) {
+  if(getGpu(gpuId).family!=='hopper') {
+    const target=getGpu(gpuId).vendor==='NVIDIA'&&component==='registers'?'registerFile':component;
+    for(const candidate of [...new Set([level,'package','die','sm','shared','registers','warp'])]) {
+      const match=getResourceReport(gpuId,candidate).rows.find(row=>row.component===target);
+      if(match)return match;
+    }
+    return null;
+  }
   const ids={gpu:'sm',gpc:'gpc',sm:'sm',cuda:'fp32',tensor:'tensor',hbm:'hbm',l2:'l2',nvlink:'nvlinks',pcie:'pcie-lanes',shared:'shared-capacity',banks:'shared-banks',bank:'bank-capacity',address:'word',registers:'registers',registerFile:'registers',registerBank:'register-ports',warpPool:'warp',scheduler:'schedulers',dispatch:'dispatch',simt:'warp-size',barrier:'barriers',tma:'tma',scoreboard:'scoreboard-physical',operand:'operand-collectors',fetch:'instruction-l0',lsu:'load-store'};
   const wanted=ids[component];
   if(!wanted)return null;
@@ -19,6 +29,9 @@ export function getComponentResourceInfo(gpuId,level,component) {
 }
 
 export function getGpuResourceTotals(id) {
+  const profile=getGpu(id);
+  if(profile.family==='davinci')return getAscendResourceTotals(profile.id);
+  if(profile.family!=='hopper')return getNvidiaResourceTotals(profile.id);
   const gpu=getGpu(id),n=GPU_RESOURCE_SPECS[gpu.id].sms.value;
   return {smCount:n,fp32:n*SM.fp32,tensor:n*SM.tensor,schedulers:n*SM.schedulers,
     partitions:n*SM.partitions,dispatch:n*SM.dispatch,registers:n*SM.registers,
@@ -28,6 +41,9 @@ export function getGpuResourceTotals(id) {
 }
 
 export function getResourceReport(id,requestedLevel='package') {
+  const profile=getGpu(id);
+  if(profile.family==='davinci')return getAscendResourceReport(profile.id,requestedLevel);
+  if(profile.family!=='hopper')return getNvidiaResourceReport(profile.id,requestedLevel);
   const gpu=getGpu(id),spec=GPU_RESOURCE_SPECS[gpu.id],t=getGpuResourceTotals(gpu.id);
   const level=Object.hasOwn(levels,requestedLevel)?requestedLevel:'package';
   const n=t.smCount,fullCompute=['h100','h200'].includes(gpu.id);

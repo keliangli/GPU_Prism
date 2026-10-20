@@ -5,8 +5,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createSharedScene, createRegistersScene, createWarpScene, applyDeepExperiment } from './deep-scenes.js';
 import { colorFor, ROLE_COLORS } from './palette.js';
+import { createPciePackage, createAscendScenes } from './architecture-scenes.js';
 
-// An explanatory Hopper model, intentionally not a physical silicon floorplan.
+// Explanatory architecture models, intentionally not physical silicon floorplans.
 // Package blocks and displayed memory layers indicate functions, not unit counts.
 const COLORS = {
   board: 0x34465f, boardEdge: 0x18273b, interposer: 0x667a96,
@@ -32,7 +33,7 @@ export class GPUScene {
   constructor(container, { gpu = DEFAULT_GPU, onSelect = () => {}, onHover = () => {} } = {}) {
     this.container = container;
     this.gpu = { ...DEFAULT_GPU, ...gpu };
-    this.modelCode = String(this.gpu.id || 'h20').toUpperCase();
+    this.modelCode = String(this.gpu.shortName || this.gpu.name || this.gpu.id || 'h20').toUpperCase();
     this.onSelect = onSelect;
     this.onHover = onHover;
     this.level = 'package';
@@ -94,7 +95,7 @@ export class GPUScene {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const canvas = this.renderer.domElement;
     canvas.style.cssText = 'display:block;position:absolute;inset:0;width:100%;height:100%;outline:none;touch-action:none;';
-    canvas.setAttribute('aria-label', `${this.modelCode} GPU 三维架构模型，可拖动旋转，滚动缩放，点击组件查看详情`);
+    canvas.setAttribute('aria-label', `${this.modelCode} ${this.gpu.family === 'davinci' ? 'AI 加速器' : 'GPU'} 三维架构模型，可拖动旋转，滚动缩放，点击组件查看详情`);
     canvas.setAttribute('role', 'img');
     container.insertBefore(canvas, this.labelLayer);
 
@@ -170,12 +171,17 @@ export class GPUScene {
     this.materials.add(this.mats.etch);
 
     this.createGround();
-    this.createPackage();
-    this.createDie();
-    this.createSM();
-    createSharedScene(this);
-    createRegistersScene(this);
-    createWarpScene(this);
+    if (this.gpu.family === 'davinci') {
+      createAscendScenes(this);
+    } else {
+      if (/GDDR/i.test(this.gpu.memoryType)) createPciePackage(this);
+      else this.createPackage();
+      this.createDie();
+      this.createSM();
+      createSharedScene(this);
+      createRegistersScene(this);
+      createWarpScene(this);
+    }
     this.batchStaticGeometry();
     applyDeepExperiment(this, this.experiment);
     // 记录每个层级的流线序号上限：warp 层的流线按阶段顺序编号，可与演示步骤联动。
@@ -312,8 +318,9 @@ export class GPUScene {
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillStyle = '#e8f1ff';
-    context.font = compact ? '600 50px Arial, sans-serif' : '600 112px Arial, sans-serif';
-    context.fillText(compact ? `${this.modelCode} / HOPPER` : this.modelCode, 520, compact ? 58 : 95);
+    const architecture = String(this.gpu.architecture || this.gpu.family || 'Hopper').toUpperCase();
+    context.font = compact ? '600 42px Arial, sans-serif' : '600 92px Arial, sans-serif';
+    context.fillText(compact ? `${this.modelCode} / ${architecture}` : this.modelCode, 520, compact ? 58 : 95, 940);
     if (!compact) {
       context.fillStyle = this.gpu.accent;
       context.font = '500 38px Consolas, monospace';
@@ -424,7 +431,7 @@ export class GPUScene {
     }
     this.modelBadge(gpu, 0, .23, -.08, 1.85);
     this.explosion(gpu, .75);
-    this.label('package', gpu, 'gpu', `${this.modelCode} · HOPPER GPU`, [0, .38, -.25], [0, -7]);
+    this.label('package', gpu, 'gpu', `${this.modelCode} · ${String(this.gpu.architecture || 'Hopper').toUpperCase()}`, [0, .38, -.25], [0, -7]);
 
     const memories = this.group(interposer, 'hbm', 'package');
     for (const x of [-2.12, 2.12]) for (let i = 0; i < 3; i++) {
@@ -446,7 +453,7 @@ export class GPUScene {
     this.box(nvlink, 3.18, .16, .29, 0, 0, 0, this.mats.interconnect, 'nvlink', .018);
     for (let i = 0; i < 40; i++) this.box(nvlink, .045, .04, .21, -1.48 + i * .076, .1, -.025, this.mats.gold, 'nvlink', .003);
     this.box(nvlink, 3.25, .035, .048, 0, .13, .12, this.mats.metal, 'nvlink', .004);
-    this.label('package', nvlink, 'nvlink', 'NVLINK 4.0', [0, .24, -.12], [10, -25]);
+    this.label('package', nvlink, 'nvlink', this.gpu.family === 'ampere' ? 'NVLINK 3.0' : 'NVLINK 4.0', [0, .24, -.12], [10, -25]);
 
     const pcie = this.group(root, 'pcie', 'package', [0, .06, 3.1]);
     this.box(pcie, 3.6, .085, .29, 0, 0, 0, this.mats.interconnect, 'pcie', .012);
@@ -454,8 +461,8 @@ export class GPUScene {
       if (i === 12 || i === 13) continue;
       this.box(pcie, .051, .018, .285, -1.72 + i * .08, .055, .025, this.mats.gold, 'pcie', .003);
     }
-    this.label('package', pcie, 'pcie', 'PCIe 5.0 I/O', [0, .1, .16], [-2, 31]);
-    this.label('package', board, 'substrate', `${this.modelCode} SXM MODULE`, [-2.95, .19, 1.8], [-37, 18]);
+    this.label('package', pcie, 'pcie', this.gpu.family === 'ampere' ? 'PCIe 4.0 I/O' : 'PCIe 5.0 I/O', [0, .1, .16], [-2, 31]);
+    this.label('package', board, 'substrate', `${this.gpu.formFactor || 'SXM'} MODULE`, [-2.95, .19, 1.8], [-37, 18]);
     this.addFlow(root, 'package', [new THREE.Vector3(0, .55, 0), new THREE.Vector3(2.1, .67, 0)], 4);
     this.addFlow(root, 'package', [new THREE.Vector3(0, .55, 0), new THREE.Vector3(-2.1, .67, 0)], 4);
     this.addFlow(root, 'package', [new THREE.Vector3(0, .55, -1.7), new THREE.Vector3(0, .34, -2.8)], 3);
@@ -506,6 +513,8 @@ export class GPUScene {
   }
 
   createSM() {
+    const hopper = !this.gpu.family || this.gpu.family === 'hopper';
+    const rayTracing = this.gpu.family === 'blackwell' || this.gpu.id === 'a40';
     const root = this.groups.sm = this.group(this.scene, 'sm');
     const base = this.group(root, 'sm', 'sm');
     this.box(base, 6.8, .12, 5.5, 0, -.09, 0, this.mats.graphite, 'sm', .055);
@@ -521,6 +530,7 @@ export class GPUScene {
     const lsu = this.group(root, 'lsu', 'sm');
     const tma = this.group(root, 'tma', 'sm', [2.7, .3, 2.13]);
     const barrier = this.group(root, 'barrier', 'sm', [-2.78, .3, 2.13]);
+    const rt = rayTracing ? this.group(root, 'rt', 'sm', [0, .3, -.17]) : null;
     for (let partition = 0; partition < 4; partition++) {
       const x = -2.3 + partition * 1.53;
       this.box(base, 1.39, .04, 3.98, x, .212, -.25, this.mats.interposer, 'sm', .018);
@@ -562,8 +572,15 @@ export class GPUScene {
     this.label('sm', registers, 'registers', 'REGISTER FILES', [-1.5, .51, -1.35], [-35, -32]);
     this.label('sm', shared, 'shared', 'SHARED / L1', [-.5, .47, 2.13], [1, 42]);
     this.label('sm', lsu, 'lsu', 'LSU', [-1.5, .45, 1.5], [-42, 9]);
-    this.label('sm', tma, 'tma', 'TMA', [0, .27, 0], [28, 30]);
+    this.label('sm', tma, 'tma', hopper ? 'TMA' : 'ASYNC COPY', [0, .27, 0], [28, 30]);
     this.label('sm', barrier, 'barrier', 'BARRIER', [0, .25, 0], [-53, 23]);
+    if (rt) {
+      this.box(rt, .66, .36, .62, 0, .27, 0, this.mats.interconnect, 'rt', .035);
+      this.box(rt, .47, .035, .43, 0, .467, 0, this.mats.metal, 'rt', .018);
+      for (let i = 0; i < 3; i++) this.box(rt, .075, .045, .33, -.14 + i * .14, .5, 0, this.mats.control, 'rt', .006);
+      this.explosion(rt, 1.25);
+      this.label('sm', rt, 'rt', 'RT CORE', [0, .58, 0], [20, -15]);
+    }
     for (let i = 0; i < 4; i++) this.addFlow(root, 'sm', [new THREE.Vector3(-2.3 + i * 1.53, .6, -1.9), new THREE.Vector3(-2.3 + i * 1.53, .6, 2.1)], 4);
   }
 

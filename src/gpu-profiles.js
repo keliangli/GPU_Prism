@@ -1,5 +1,8 @@
 import { components as baseComponents, sources as baseSources, levels } from './data.js';
 import { GPU_RESOURCE_SPECS, RESOURCE_SOURCES as RS } from './gpu-resource-specs.js';
+import { NVIDIA_PROFILES, NVIDIA_SOURCES, getNvidiaComponents } from './additional-gpus.js';
+import { ASCEND_PROFILES, ASCEND_SOURCES, getAscendComponents, ASCEND_LEVELS, ASCEND_FLOWS } from './ascend.js';
+import { levelComponents as baseLevelComponents, flows as baseFlows } from './data.js';
 
 // Product specifications describe the SXM variant shown here. PCIe/NVL variants
 // can have different memory, clocks and interconnect bandwidth.
@@ -38,7 +41,26 @@ export const GPU_PROFILES = {
   }
 };
 
-export const gpuList = ['h20', 'h200', 'h100', 'h800'].map(id => GPU_PROFILES[id]);
+Object.assign(GPU_PROFILES, NVIDIA_PROFILES, ASCEND_PROFILES);
+for (const profile of Object.values(GPU_PROFILES)) {
+  profile.vendor ??= 'NVIDIA';
+  profile.architecture ??= 'Hopper';
+}
+export const gpuList = Object.values(GPU_PROFILES);
+
+export function getGpuLevels(gpu) { return gpu.family === 'davinci' ? ASCEND_LEVELS : levels; }
+export function getGpuLevelComponents(gpu) {
+  const result = structuredClone(baseLevelComponents);
+  if (gpu.rtCores) result.sm.splice(2, 0, 'rt');
+  if (gpu.family==='davinci') { result.shared.push('writeback'); result.registers.splice(3,0,'tensor'); }
+  return result;
+}
+export function getGpuFlows(gpu) {
+  if (gpu.family === 'davinci') return ASCEND_FLOWS;
+  if (gpu.family === 'hopper') return baseFlows;
+  const adapt = value => typeof value === 'string' ? value.replaceAll('Hopper',gpu.architecture).replaceAll('TMA','异步搬运').replaceAll('WGMMA','矩阵指令') : Array.isArray(value) ? value.map(adapt) : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k,v])=>[k,adapt(v)])) : value;
+  return adapt(baseFlows);
+}
 
 export function getGpu(id) {
   return Object.hasOwn(GPU_PROFILES, id) ? GPU_PROFILES[id] : GPU_PROFILES.h20;
@@ -78,6 +100,8 @@ const productSources = {
 // while model-specific specification overrides refer to appended sources.
 export function getGpuSources(id) {
   const gpu = getGpu(id);
+  if (gpu.family === 'davinci') return structuredClone(ASCEND_SOURCES[gpu.id]);
+  if (NVIDIA_PROFILES[gpu.id]) return structuredClone(NVIDIA_SOURCES[gpu.id]);
   return [...baseSources, ...productSources[gpu.id]].map(source => ({ ...source }));
 }
 
@@ -90,6 +114,8 @@ function adaptCopy(value, modelName) {
 
 export function getGpuComponents(id) {
   const gpu = getGpu(id);
+  if (gpu.family === 'davinci') return getAscendComponents(gpu);
+  if (NVIDIA_PROFILES[gpu.id]) return getNvidiaComponents(gpu);
   const components = adaptCopy(baseComponents, gpu.name);
   const productSource = gpu.id === 'h20' ? 0 : baseSources.length;
   const bandwidthSource = ['h20','h800'].includes(gpu.id) ? baseSources.length + 1 : productSource;

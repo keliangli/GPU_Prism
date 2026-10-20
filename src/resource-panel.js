@@ -6,7 +6,7 @@ import './resource-panel.css';
 const STATUS = {
   verified: { label: '已核实', explanation: '厂商公开规格或官方文档直接给出。' },
   observed: { label: '一手研究', explanation: '来自一手测量或架构研究，可能受具体版本影响。' },
-  reference: { label: '架构参考', explanation: '采用 Hopper 架构参考值，不作为该型号的独立实测。' },
+  reference: { label: '架构参考', explanation: '采用对应架构的公开参考值，不作为该型号的独立实测。' },
   derived: { label: '按规格推算', explanation: '由已列出的规格与数量相乘或换算得到。' },
   unknown: { label: '待核实', explanation: '缺少可靠公开资料，暂不填入具体数字。' }
 };
@@ -79,7 +79,7 @@ export class ResourcePanel {
       <details class="resource-details" ${this.expanded ? 'open' : ''}>
         <summary><span>${icon('layers', 15)}完整统计<span class="resource-row-count">${(report.rows || []).length} 项资源</span></span><span class="resource-details-action"><span class="resource-closed-label">展开明细</span><span class="resource-open-label">收起明细</span>${icon('down', 14)}</span></summary>
         <div class="resource-table-scroll" role="region" aria-label="资源数量和容量明细，可横向滚动" tabindex="0">
-          <table class="resource-table"><thead><tr><th scope="col">资源</th><th scope="col">局部数量 / 容量</th><th scope="col">全 GPU 汇总</th><th scope="col">统计依据 / 状态</th><th scope="col">来源</th></tr></thead>
+          <table class="resource-table"><thead><tr><th scope="col">资源</th><th scope="col">局部数量 / 容量</th><th scope="col">全芯片汇总</th><th scope="col">统计依据 / 状态</th><th scope="col">来源</th></tr></thead>
           <tbody>${(report.rows || []).map(row => `<tr style="--resource-color:${colorFor(row.component)}"><th scope="row">${resourceName(row, 'resource-row-label')}</th><td class="resource-table-value">${escapeHtml(row.local || '未核实')}</td><td class="resource-table-value">${escapeHtml(row.total || '未核实')}</td><td><div class="resource-basis">${statusBadge(row.status)}<span>${escapeHtml(row.basis)}</span></div></td><td>${sourceLink(row.source)}</td></tr>`).join('')}</tbody></table>
         </div>
         <div class="resource-status-key" aria-label="统计状态说明">${Object.entries(STATUS).map(([key, state]) => `<span>${statusBadge(key)}<span>${state.explanation}</span></span>`).join('')}</div>

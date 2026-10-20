@@ -29,3 +29,13 @@ test('a blocked warp cannot pass dependency checking until it is ready',()=>{
   assert.equal(advanceWarp(5,true).complete,false);
   assert.equal(advanceWarp(6,true).complete,true);
 });
+
+test('resource budgets use Ampere and Blackwell residency and shared limits',()=>{
+  const a40={registers:65536,warps:48,threads:1536,blocks:16,sharedKiB:100,sharedBlockKiB:99};
+  assert.equal(registerBudget(32,256,0,a40).residentWarps,48);
+  assert.equal(registerBudget(32,256,0,a40).occupancy,1);
+  assert.equal(registerBudget(32,256,100,a40).residentBlocks,0);
+  const a100={...a40,warps:64,threads:2048,blocks:32,sharedKiB:164,sharedBlockKiB:163};
+  assert.equal(registerBudget(32,256,128,a100).residentBlocks,1);
+  assert.equal(registerBudget(32,256,0,a100).residentWarps,64);
+});

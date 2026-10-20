@@ -4,7 +4,7 @@
 
 > 从封装到 SM 内部，用可交互的 3D 模型理解 GPU 硬件如何协同完成一次计算。
 
-INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H20、H200、H100、H800 的 SXM 型号，提供从封装、芯片、SM 到共享内存、寄存器文件、Warp 执行流水线的六层探索视图；其中三个深层视图附带可调参数的原理实验，把公开的 CUDA / Hopper 访问模型「跑」起来看。
+INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 11 款 GPU / NPU，涵盖 NVIDIA Hopper、Blackwell、Ampere 与昇腾达芬奇。NVIDIA 提供封装、芯片、SM、共享内存、寄存器、Warp 六层探索；昇腾使用独立的 AIC / AIV、片上缓冲、Cube 数据通路与流水同步视图。每层配有按型号区分的资源统计和来源。
 
 它面向的是「理解硬件关系」而不是「背规格」：每个组件都能点开看说明、在推理场景中的意义和参考来源；每个模型也都明确标注了示意范围。
 
@@ -28,7 +28,7 @@ INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H
 | 项目 | 说明 |
 | --- | --- |
 | 形态 | 纯静态前端站点，无后端、无账号、不采集用户数据 |
-| 收录 GPU | NVIDIA H20 / H200 / H100 / H800（Hopper 架构，SXM 型号） |
+| 收录芯片 | H20 / H200 / H100 / H800、RTX PRO 5000 Blackwell、RTX 6000D、RTX 5090D、A100、A40、昇腾 910B4 / 910C |
 | 探索层级 | 6 层：封装总览、芯片架构、SM 微架构、共享内存、寄存器文件、Warp 执行流水线 |
 | 原理实验 | 3 个：共享内存 bank 冲突、寄存器资源预算、Warp 指令推进 |
 | 运行依赖 | 浏览器需支持 WebGL；无 WebGL 时自动降级为组件列表浏览 |
@@ -39,7 +39,7 @@ INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H
 
 站点为 SPA，使用 hash 路由，深链接可直接访问任意层级。
 
-以下路由中的 `h20` 可替换为 `h200`、`h100`、`h800`；每款 GPU 都提供完整六层视图。
+以下路由中的 `h20` 可替换为 `h200`、`h100`、`h800`、`rtx-pro-5000`、`rtx-6000d`、`rtx-5090d`、`a100`、`a40`、`ascend-910b4`、`ascend-910c`。每款芯片均提供六层视图，昇腾层级使用对应功能名称。
 
 | GPU | 显存 | 显存带宽 | NVLink 带宽 | 已核实启用 SM |
 | --- | --- | --- | --- | --- |
@@ -52,13 +52,29 @@ H800 容量与模块形态来自 NVIDIA 当前产品支持文档；带宽来自 
 
 | 路由 | 视图 | 内容 |
 | --- | --- | --- |
-| `#/gpus` | GPU 图鉴 | GPU 目录、架构筛选（全部 / Hopper / Blackwell）与名称搜索 |
+| `#/gpus` | GPU 图鉴 | GPU 目录、架构筛选（全部 / Hopper / Blackwell / Ampere / 昇腾）与名称搜索 |
 | `#/gpu/h20` | 封装总览 | 基板、GPU 核心、HBM3 堆栈、NVLink、PCIe 的 3D 排布 |
 | `#/gpu/h20/die` | 芯片架构 | 计算集群（GPC）、SM 阵列、L2 缓存与 HBM 接口 |
 | `#/gpu/h20/sm` | SM 微架构 | Tensor Core、CUDA Core、调度器、寄存器文件、共享内存、LSU、TMA、屏障 |
 | `#/gpu/h20/shared` | 共享内存 | 32 bank 的逐 lane 地址映射与冲突实验 |
 | `#/gpu/h20/registers` | 寄存器文件 | 寄存器阵列、操作数收集、写回与资源预算实验 |
 | `#/gpu/h20/warp` | Warp 执行流水线 | 取指到写回的 7 个功能阶段与单指令推进实验 |
+
+## 新增型号与版本边界
+
+| 路由 ID | 选用版本 | 架构 / 模型差异 |
+| --- | --- | --- |
+| `rtx-pro-5000` | RTX PRO 5000 Blackwell 48GB | GDDR7、第五代 Tensor、第四代 RT；不是旧款 Quadro RTX 5000 或 Ada 32GB |
+| `rtx-6000d` | RTX 6000D 84GB | GDDR7；产品内存规格与实测 SM 样本分开标注 |
+| `rtx-5090d` | RTX 5090D 原版 32GB | 不混用 RTX 5090D V2 24GB |
+| `a100` | A100 SXM 80GB | GA100：64 FP32 / SM、164KiB shared 上限、64 Warp / SM |
+| `a40` | A40 PCIe 48GB | GA102：128 FP32 / SM、100KiB shared 上限、48 Warp / SM；包含 RT Core |
+| `ascend-910b4` | 910B4 32GB 研究配置 | 20 AIC + 40 AIV，具体配置见引用论文 |
+| `ascend-910c` | 910C 128GB 研究配置 | 双 die，48 AIC + 96 AIV；具体配置见 CloudMatrix384 论文 |
+
+NVIDIA SM 限制按对应计算能力读取公开 CUDA 技术表。Blackwell 工作站/消费卡采用 CC 12.x 的 100KiB shared、48 Warp 与 24 CTA 上限，不能套用数据中心 Blackwell 或 Hopper。
+
+昇腾不使用 CUDA Warp / 32-bank / 线程寄存器占用率模型。AIC 与 AIV 各有控制和代码段，经 GM 交换；L1、L0A/B/C 按 AIC 统计，UB 按 AIV 统计。官方 CANN 编程资源上限标为架构参考，产品数量与容量的研究配置标为一手研究，未核实 L2、物理端口与寄存器数量保留未知。
 
 ## 资源统计
 

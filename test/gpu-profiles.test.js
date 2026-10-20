@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { gpuList, getGpu, getGpuComponents, getGpuSources, parseGpuRoute } from '../src/gpu-profiles.js';
+import { gpuList, getGpu, getGpuComponents, getGpuSources, parseGpuRoute, getGpuLevels, getGpuLevelComponents, getGpuFlows } from '../src/gpu-profiles.js';
 import { components as baseComponents, levelComponents, flows } from '../src/data.js';
 
 test('SXM profiles keep product memory and interconnect specifications separate', () => {
-  assert.deepEqual(gpuList.map(g=>g.id), ['h20','h200','h100','h800']);
+  assert.equal(gpuList.length,11);
+  assert.deepEqual(gpuList.slice(0,4).map(g=>g.id), ['h20','h200','h100','h800']);
   assert.equal(getGpu('h200').memoryGB,141);
   assert.equal(getGpu('h200').memoryType,'HBM3e');
   assert.equal(getGpu('h100').memoryGB,80);
@@ -30,7 +31,7 @@ test('direct routes retain every GPU and level and safely reject unsupported pat
 test('every profile supports all six component levels and valid citations', () => {
   for (const gpu of gpuList) {
     const catalog=getGpuComponents(gpu.id),sources=getGpuSources(gpu.id);
-    for (const ids of Object.values(levelComponents)) for (const id of ids) {
+    for (const ids of Object.values(getGpuLevelComponents(gpu))) for (const id of ids) {
       assert.ok(catalog[id],`${gpu.id}/${id}`);
       assert.ok(sources[catalog[id].source]?.url,`${gpu.id}/${id} source`);
     }
@@ -39,10 +40,29 @@ test('every profile supports all six component levels and valid citations', () =
 });
 
 test('flow walkthroughs only select components available in their level', () => {
-  for(const [level,flow] of Object.entries(flows)) {
+  for(const gpu of gpuList)for(const [level,flow] of Object.entries(getGpuFlows(gpu))) {
     assert.ok(flow.steps.length>0);
     assert.equal(new Set(flow.steps.map(s=>s.id)).size,flow.steps.length);
-    for(const step of flow.steps) assert.ok(levelComponents[level].includes(step.component),`${level}/${step.id}`);
+    for(const step of flow.steps) assert.ok(getGpuLevelComponents(gpu)[level].includes(step.component),`${gpu.id}/${level}/${step.id}`);
+  }
+});
+
+test('catalog keeps product versions and incompatible architecture models distinct',()=>{
+  assert.equal(getGpu('rtx-pro-5000').memoryGB,48);
+  assert.equal(getGpu('rtx-6000d').memoryGB,84);
+  assert.equal(getGpu('rtx-5090d').memoryGB,32);
+  assert.equal(getGpu('a100').memoryGB,80);
+  assert.equal(getGpu('a40').memoryGB,48);
+  assert.equal(getGpu('a100').smLimits.sharedKiB,164);
+  assert.equal(getGpu('a40').smLimits.sharedKiB,100);
+  assert.equal(getGpu('rtx-5090d').smLimits.blocks,24);
+  for(const id of ['ascend-910b4','ascend-910c']) {
+    const gpu=getGpu(id),catalog=getGpuComponents(id);
+    assert.equal(gpu.vendor,'昇腾');
+    assert.doesNotMatch(getGpuLevels(gpu).warp.name,/Warp/);
+    assert.match(catalog.tensor.title,/Cube/i);
+    assert.match(catalog.cuda.title,/Vector/i);
+    assert.doesNotMatch(JSON.stringify(catalog),/Hopper|WGMMA|TMA|CUDA Core/);
   }
 });
 

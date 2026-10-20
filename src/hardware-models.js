@@ -15,18 +15,19 @@ export function sharedAccess(stride = 1, offset = 0) {
     stride: safeStride, offset: safeOffset };
 }
 
-export function registerBudget(registersPerThread = 64, threadsPerBlock = 256, sharedKiB = 0) {
+export function registerBudget(registersPerThread = 64, threadsPerBlock = 256, sharedKiB = 0, limits = {}) {
+  const model={registers:65536,warps:64,threads:2048,blocks:32,sharedKiB:228,sharedBlockKiB:227,...limits};
   const registers = Math.max(16, Math.min(255, Math.trunc(Number(registersPerThread) || 64)));
   const threads = [128,256,512,1024].includes(Number(threadsPerBlock)) ? Number(threadsPerBlock) : 256;
-  const shared = Math.max(0, Math.min(228, Number(sharedKiB) || 0));
+  const shared = Math.max(0, Math.min(model.sharedKiB, Number(sharedKiB) || 0));
   const perBlock = registers * threads;
-  const capacities = { registers: Math.floor(65536 / perBlock), threads: Math.floor(2048 / threads),
-    shared: shared > 227 ? 0 : shared ? Math.floor(228 / shared) : 32, blocks: 32 };
+  const capacities = { registers: Math.floor(model.registers / perBlock), threads: Math.floor(model.threads / threads),
+    shared: shared > model.sharedBlockKiB ? 0 : shared ? Math.floor(model.sharedKiB / shared) : model.blocks, blocks: model.blocks };
   const residentBlocks = Math.min(...Object.values(capacities));
   const residentWarps = residentBlocks * (threads / 32);
   return { registers, threads, shared, perBlock, residentBlocks, residentWarps,
-    occupancy: residentWarps / 64, allocatedRegisters: perBlock * residentBlocks,
-    unusedRegisters: 65536 - perBlock * residentBlocks,
+    occupancy: residentWarps / model.warps, allocatedRegisters: perBlock * residentBlocks,
+    unusedRegisters: model.registers - perBlock * residentBlocks,
     limits: Object.keys(capacities).filter(key => capacities[key] === residentBlocks), capacities };
 }
 

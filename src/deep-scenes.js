@@ -58,6 +58,7 @@ function chip(s, parent, id, level, position, size, material, text) {
 }
 
 export function createSharedScene(s) {
+  const hopper = !s.gpu.family || s.gpu.family === 'hopper';
   const root = foundation(s, 'shared', 7.35, 5.65);
   const banks = s.group(root, 'banks', 'shared', [0, .23, -.35]);
   s.bankTiles = [];
@@ -91,8 +92,8 @@ export function createSharedScene(s) {
   s.box(fabric, 6.27, .08, .25, 0, 0, 0, cyan, 'banks', .012);
   for (let i = 0; i < 32; i++) s.box(fabric, .018, .015, .19, -3.01 + i * .194, .05, 0, s.mats.gold, 'banks', .002);
   const lsu = chip(s, root, 'lsu', 'shared', [-2.28, .245, 2.03], [1.6, .68], s.mats.lsu, 'LOAD / STORE');
-  const tma = chip(s, root, 'tma', 'shared', [0, .245, 2.03], [1.6, .68], s.mats.transfer, 'TMA');
-  const barrier = chip(s, root, 'barrier', 'shared', [2.28, .245, 2.03], [1.6, .68], s.mats.interconnect, 'MBARRIER');
+  const tma = chip(s, root, 'tma', 'shared', [0, .245, 2.03], [1.6, .68], s.mats.transfer, hopper ? 'TMA' : 'ASYNC COPY');
+  const barrier = chip(s, root, 'barrier', 'shared', [2.28, .245, 2.03], [1.6, .68], s.mats.interconnect, hopper ? 'MBARRIER' : 'SYNCHRONIZATION');
   for (const x of [-2.28, 0, 2.28]) route(s, root, [[x, 1.42], [x, 2.03]]);
   s.explosion(lsu, .35);
   s.explosion(tma, .48);
@@ -100,7 +101,7 @@ export function createSharedScene(s) {
   s.label('shared', banks, 'banks', 'BANK ARRAY ×32', [-1, .45, -.65], [-16, -24]);
   s.label('shared', decoder, 'address', 'ADDRESS DECODE', [0, .27, 0], [0, -18]);
   s.label('shared', lsu, 'lsu', 'LSU', [0, .27, 0], [-45, 32]);
-  s.label('shared', tma, 'tma', 'TMA ENGINE', [0, .27, 0], [0, 58]);
+  s.label('shared', tma, 'tma', hopper ? 'TMA ENGINE' : s.gpu.family === 'ampere' ? 'ASYNC COPY / cp.async' : 'ASYNC COPY', [0, .27, 0], [0, 58]);
   s.label('shared', barrier, 'barrier', 'BARRIER', [0, .27, 0], [44, 28]);
   for (let i = 0; i < 4; i++) s.addFlow(root, 'shared', [new THREE.Vector3(-2.28 + i * 1.52, .62, 2), new THREE.Vector3(-2.28 + i * 1.52, .62, -1.4)], 3);
 }

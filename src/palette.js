@@ -7,7 +7,7 @@ export const ROLE_COLORS = {
 
 export const COMPONENT_COLORS = {
   gpu:ROLE_COLORS.compute, gpc:ROLE_COLORS.compute, sm:ROLE_COLORS.compute,
-  cuda:ROLE_COLORS.compute, tensor:ROLE_COLORS.tensor, execute:ROLE_COLORS.tensor,
+  cuda:ROLE_COLORS.compute, tensor:ROLE_COLORS.tensor, execute:ROLE_COLORS.tensor, rt:'#d6a1f1',
   hbm:ROLE_COLORS.memory, shared:ROLE_COLORS.memory, banks:ROLE_COLORS.memory,
   bank:'#71d7e5', lsu:'#64c6db', tma:ROLE_COLORS.transfer, writeback:ROLE_COLORS.transfer,
   l2:ROLE_COLORS.registers, registers:ROLE_COLORS.registers, registerFile:ROLE_COLORS.registers,
