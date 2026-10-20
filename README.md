@@ -1,8 +1,8 @@
 # INFAR · GPU 架构图鉴
 
-> 从封装到 SM 内部，用可交互的 3D 模型理解 GPU 硬件如何协同完成一次计算。
+**在线查看**：<https://keliangli.github.io/GPU_Prism/>
 
-**在线预览**：<https://infar-gpu-atlas.alert-grass-7728.chatgpt.site/>
+> 从封装到 SM 内部，用可交互的 3D 模型理解 GPU 硬件如何协同完成一次计算。
 
 INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H20、H200、H100、H800 的 SXM 型号，提供从封装、芯片、SM 到共享内存、寄存器文件、Warp 执行流水线的六层探索视图；其中三个深层视图附带可调参数的原理实验，把公开的 CUDA / Hopper 访问模型「跑」起来看。
 
@@ -199,11 +199,17 @@ H20 产品信息参考 NVIDIA 官方 vGPU 文档与 Dell XE9680 规格；H100、
 
 ## 部署
 
+站点通过 **GitHub Pages** 发布，线上地址：<https://keliangli.github.io/GPU_Prism/>
+
+每次 push 到 `main` 都会触发 [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml)：先 `npm ci` 与 `node --test`，再构建并以当前 Pages 子路径作为 `--base` 发布 `dist`。首次使用需在仓库 Settings → Pages 把 Source 设为 “GitHub Actions”。
+
+本地构建：
+
 ```sh
 npm run build
 ```
 
-产物在 `dist/`（已在 `.gitignore` 中，不入库）。仓库内的 `.openai/hosting.json` 声明静态目录为 `dist`，按该配置上传构建产物即可完成部署。
+产物在 `dist/`（已在 `.gitignore` 中，不入库）。仓库内的 `.openai/hosting.json` 声明静态目录为 `dist`，供其他静态托管使用。
 
 ## 扩展新的 GPU
 
