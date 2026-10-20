@@ -1,10 +1,10 @@
-# INFAR · GPU 架构图鉴
+# INFAR · 软硬件架构图鉴
 
 **在线查看**：<https://keliangli.github.io/GPU_Prism/>
 
 > 从封装到 SM 内部，用可交互的 3D 模型理解 GPU 硬件如何协同完成一次计算。
 
-INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 11 款 GPU / NPU，涵盖 NVIDIA Hopper、Blackwell、Ampere 与昇腾达芬奇。NVIDIA 提供封装、芯片、SM、共享内存、寄存器、Warp 六层探索；昇腾使用独立的 AIC / AIV、片上缓冲、Cube 数据通路与流水同步视图。每层配有按型号区分的资源统计和来源。
+INFAR 是一个纯前端的软硬件架构学习站点，整合 GPU / NPU 硬件、PyTorch 模块关系，以及 SGLang / DeepInfer 源码地图。当前收录 11 款 GPU / NPU，涵盖 NVIDIA Hopper、Blackwell、Ampere 与昇腾达芬奇。NVIDIA 提供封装、芯片、SM、共享内存、寄存器、Warp 六层探索；昇腾使用独立的 AIC / AIV、片上缓冲、Cube 数据通路与流水同步视图。每层配有按型号区分的资源统计和来源。
 
 它面向的是「理解硬件关系」而不是「背规格」：每个组件都能点开看说明、在推理场景中的意义和参考来源；每个模型也都明确标注了示意范围。
 
@@ -56,6 +56,16 @@ node --test
 ```
 
 索引输出提交到 `src/pytorch-source-index.json`；正常构建与部署读取这个快照，不要求部署环境有本地 PyTorch 源码。
+
+## SGLang / DeepInfer 源码地图
+
+顶部「SGLang 源码」和「DeepInfer 源码」接入原 Code Atlas 的完整交互：模块街区、文件建筑、依赖连线、文件功能导读、符号楼层、同文件调用、路径搜索、热度着色与请求生命周期讲解。SGLang 另有按需加载的 v0.5.12 版本对比。
+
+- `#/sglang`：1,904 个文件、44 个街区、11,293 条 import 边。
+- `#/deepinfer`：306 个文件、31 个街区、762 条 import / include / 扩展绑定边。
+- 深链接保留所属项目，如 `#/deepinfer/i/deepinfer%2Fengine%2Fllm_engine.py`，支持直接打开和刷新。
+
+快照位于 `public/code-atlas/`，查看器在 `src/code-atlas/`；样式、事件和数据独立，切换页面会释放资源。抽取工具及更新方法见 [融合说明](docs/code-atlas/README.md)。图谱表示静态结构，不能当作完整运行时调用轨迹。
 
 ## 页面与路由
 

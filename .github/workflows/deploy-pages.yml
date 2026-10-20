@@ -34,6 +34,14 @@ jobs:
       - name: Run model tests
         run: node --test
 
+      - name: Setup Python for source extractors
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run source extractor tests
+        run: python -m unittest discover -s test/code-atlas -p 'test_*.py'
+
       # configure-pages 提供项目页的子路径（例如 /GPU_Prism），
       # 传给 build 的 --base，保证 /assets/* 与 /favicon.svg 能正确解析。
       # 这里不改动仓库默认 base（'/'），以免影响其他根路径部署。

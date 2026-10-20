@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test",
+    "test:extractors": "python -m unittest discover -s test/code-atlas -p test_*.py",
+    "graph:sglang": "python tools/code_atlas/extract_graph.py && node scripts/code-atlas/sync-graph.mjs",
+    "graph:deepinfer": "python tools/code_atlas/extract_deepinfer.py && node scripts/code-atlas/sync-graph.mjs deepinfer",
+    "graph:previous": "node scripts/code-atlas/make-baseline.mjs && node scripts/code-atlas/sync-graph.mjs"
   },
   "dependencies": {
     "three": "0.180.0"

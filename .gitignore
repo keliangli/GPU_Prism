@@ -5,3 +5,7 @@ dist/
 *.zip
 *.log
 qa/
+
+__pycache__/
+*.pyc
+data/code-atlas/
