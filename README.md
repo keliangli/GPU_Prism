@@ -12,6 +12,7 @@ INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H
 
 - [项目概览](#项目概览)
 - [页面与路由](#页面与路由)
+- [资源统计](#资源统计)
 - [深层实验](#深层实验)
 - [交互与快捷键](#交互与快捷键)
 - [快速开始](#快速开始)
@@ -42,10 +43,10 @@ INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 NVIDIA H
 
 | GPU | 显存 | 显存带宽 | NVLink 带宽 | 已核实启用 SM |
 | --- | --- | --- | --- | --- |
-| H20 SXM5 | 96 GB HBM3 | 按具体配置核对 | 按具体配置核对 | 未在此列示 |
+| H20 SXM5 | 96 GB HBM3 | 4.0 TB/s（研究配置） | 900 GB/s（拓扑推算） | 78（NVIDIA 软件文档） |
 | H200 SXM | 141 GB HBM3e | 4.8 TB/s | 900 GB/s | 132 |
 | H100 SXM | 80 GB HBM3 | 3.35 TB/s | 900 GB/s | 132 |
-| H800 SXM5 | 80 GB HBM | 3.35 TB/s | 400 GB/s | 未在此列示 |
+| H800 SXM5 | 80 GB HBM | 3.35 TB/s | 400 GB/s | 132（一手研究） |
 
 H800 容量与模块形态来自 NVIDIA 当前产品支持文档；带宽来自 NVIDIA 2023 年原版产品手册的第三方镜像。该手册未注明 HBM 代际，页面使用「HBM」表述。所有参数限定表中型号，不能直接套用到 PCIe 或 NVL 版本。
 
@@ -58,6 +59,18 @@ H800 容量与模块形态来自 NVIDIA 当前产品支持文档；带宽来自 
 | `#/gpu/h20/shared` | 共享内存 | 32 bank 的逐 lane 地址映射与冲突实验 |
 | `#/gpu/h20/registers` | 寄存器文件 | 寄存器阵列、操作数收集、写回与资源预算实验 |
 | `#/gpu/h20/warp` | Warp 执行流水线 | 取指到写回的 7 个功能阶段与单指令推进实验 |
+
+## 资源统计
+
+每个探索层级都有资源总览和可展开的完整统计。封装与裸片显示整卡规模；SM、共享内存、寄存器、Warp 层级可切换「单个 SM / 全 GPU 汇总」。点击资源名称会定位对应的 3D 组件，右侧检查器也显示局部数量与整卡数量。
+
+- 整卡：SM、GPC/TPC、FP32 CUDA、Tensor、L2、HBM 容量、有效堆栈、显存控制器、NVLink 链路与带宽、PCIe 通道。
+- SM：计算路径、执行分区、调度器、Dispatch、LD/ST、SFU、纹理、寄存器与片上存储。
+- 深层：32 个 shared bank、256 KiB 统一池、228 KiB shared 上限、227 KiB/CTA 上限、65,536 条 32-bit 寄存器、64 Warp/2,048 线程/32 CTA 驻留上限、16 Warp 槽/调度器等。
+
+统计区分「已核实」「一手研究」「架构参考」「按规格推算」「待核实」，每项都有依据和来源。H20 的 78 SM 来自 NVIDIA TensorRT-LLM 文档；H800 的 132 SM 由 DeepSeek 报告与 FlashMLA 的 H800 SXM5 配置交叉支持。H20 的 60 MB L2、4.0 TB/s 显存带宽作为公开研究配置列示。未核实的 H800 L2、部分型号的 GPC/HBM 堆栈、TMA 通道、寄存器物理 bank/端口与 Scoreboard 条目不填猜测值。
+
+整卡寄存器、共享内存、bank 和驻留槽是分布在多个 SM 内的数量之和，不构成一个跨 SM 统一分配的资源池。例如 132 SM × 65,536 条 × 4 字节 = 33 MiB 分布式寄存器；132 × 228 KiB ≈ 29.39 MiB 是 shared 上限之和。256 KiB 的 L1/shared 统一池与 228 KiB 的 shared carveout 不能相加，各项驻留上限也不保证同时达到。
 
 ## 深层实验
 
@@ -141,7 +154,7 @@ npm run preview
 node --test
 ```
 
-测试覆盖 `src/hardware-models.js` 中的 bank 映射、寄存器资源预算与指令推进逻辑。
+测试覆盖 bank 映射、寄存器预算、指令推进、四 GPU 路由、组件来源，以及 24 个资源统计报告的数量、单位、范围和未知值边界。
 
 ## 目录结构
 
@@ -157,6 +170,9 @@ node --test
 │   ├── hardware-models.js     纯逻辑模型：bank 映射、资源预算、指令推进（可单测）
 │   ├── data.js                组件说明、资料来源、层级与各层组件列表
 │   ├── gpu-profiles.js        四款 GPU 的产品规格、来源与组件内容适配
+│   ├── gpu-resource-specs.js  型号资源证据与 Hopper 参考上限
+│   ├── gpu-resources.js       各层数量、分布式汇总与推导公式
+│   ├── resource-panel.js/css  资源总览、范围切换与完整明细
 │   ├── icons.js / palette.js  图标与配色词汇
 │   └── style.css / deep.css / color-theme.css
 ├── test/hardware-models.test.js
@@ -194,9 +210,12 @@ H20 产品信息参考 NVIDIA 官方 vGPU 文档与 Dell XE9680 规格；H100、
 7. PTX ISA · Asynchronous Operations —— TMA、mbarrier 与异步矩阵计算的指令语义
 8. NVIDIA Nsight Compute · Profiling Guide —— Warp 就绪、发射与依赖等待的可观测状态
 9. NVIDIA H100 / H200 官方产品页与 HGX AI Factory 系统组件文档 —— 容量、类型、带宽与互联
-10. NVIDIA DevTech · CUDA Programming and Optimization —— H100 / H200 的 132 个 SM 与 50 MB L2
+10. NVIDIA DevTech · CUDA Programming and Optimization —— H200 的 132 SM、50 MB L2 与 Hopper SM 参考资源
 11. NVIDIA AI Enterprise · Hopper H800 —— H800 SXM5 80GB 与 MIG 配置
 12. NVIDIA H800 Tensor Core GPU 2023 产品手册（第三方镜像）—— H800 SXM 的显存与 NVLink 带宽
+13. NVIDIA H100 架构白皮书 —— H100 SXM5 的 GPC/TPC/SM、执行单元、显存堆栈和控制器数量
+14. NVIDIA TensorRT-LLM —— H20 的 78 个 SM；AAAI 一手论文 —— H20 60 MB L2、4.0 TB/s 实验配置
+15. DeepSeek-V3 报告与 FlashMLA —— H800 / H800 SXM5 的 132 SM；NVIDIA Fabric Manager —— 各型号 HGX NVLink 拓扑
 
 ## 部署
 

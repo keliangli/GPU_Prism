@@ -1,12 +1,13 @@
 import { components as baseComponents, sources as baseSources, levels } from './data.js';
+import { GPU_RESOURCE_SPECS, RESOURCE_SOURCES as RS } from './gpu-resource-specs.js';
 
 // Product specifications describe the SXM variant shown here. PCIe/NVL variants
 // can have different memory, clocks and interconnect bandwidth.
 export const GPU_PROFILES = {
   h20: {
     id: 'h20', name: 'H20', family: 'hopper', formFactor: 'SXM5',
-    memoryGB: 96, memoryType: 'HBM3', memoryBandwidth: '按具体配置核对',
-    nvlinkBandwidth: '按具体配置核对', activeSMs: null,
+    memoryGB: 96, memoryType: 'HBM3', memoryBandwidth: '4.0 TB/s',
+    nvlinkBandwidth: '900 GB/s', activeSMs: 78,
     subtitle: '从大模型推理，走进 Hopper。',
     description: '从 96 GB HBM3 显存出发，探索权重、KV Cache、片上存储和执行单元如何配合完成推理。',
     focus: '96 GB 显存 · 推理与 KV Cache', accent: '#729dff'
@@ -30,7 +31,7 @@ export const GPU_PROFILES = {
   h800: {
     id: 'h800', name: 'H800', family: 'hopper', formFactor: 'SXM5',
     memoryGB: 80, memoryType: 'HBM', memoryBandwidth: '3.35 TB/s',
-    nvlinkBandwidth: '400 GB/s', activeSMs: null,
+    nvlinkBandwidth: '400 GB/s', activeSMs: 132,
     subtitle: '沿着数据路径，理解同架构的差异。',
     description: '80 GB 显存、3.35 TB/s 显存带宽与 400 GB/s NVLink，沿 Hopper 数据路径理解计算、存储与多卡通信之间的关系。',
     focus: '80 GB 显存 · 400 GB/s NVLink', accent: '#4ac8da'
@@ -50,10 +51,15 @@ export function parseGpuRoute(hash) {
 }
 
 const productSources = {
-  h20: [],
+  h20: [
+    {...RS.h20sm,label:'NVIDIA 官方软件文档直接给出 H20 的 78 个启用 SM',kind:'NVIDIA 官方软件文档'},
+    {...RS.h20study,label:'H20 实验平台：60 MB L2、96 GB HBM、4.0 TB/s；属于一手研究配置',kind:'一手研究论文'},
+    {...RS.fabric,label:'HGX H20 与 H100 同拓扑：每 GPU 18 条 NVLink；900 GB/s 为 18 × 50 推算',kind:'NVIDIA 官方系统文档'}
+  ],
   h100: [
     { title: 'NVIDIA H100 Tensor Core GPU', label: 'H100 SXM：80 GB、3.35 TB/s 显存带宽、900 GB/s NVLink', url: 'https://www.nvidia.com/en-us/data-center/h100/', kind: 'NVIDIA 官方产品规格' },
-    { title: 'NVIDIA HGX AI Factory · System Components', label: 'HGX H100 的 80 GB HBM3 与 HGX H200 的 141 GB HBM3e', url: 'https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory-h100-h200-b200/latest/components.html', kind: 'NVIDIA 官方系统参考架构' }
+    { title: 'NVIDIA HGX AI Factory · System Components', label: 'HGX H100 的 80 GB HBM3 与 HGX H200 的 141 GB HBM3e', url: 'https://docs.nvidia.com/enterprise-reference-architectures/hgx-ai-factory-h100-h200-b200/latest/components.html', kind: 'NVIDIA 官方系统参考架构' },
+    {...RS.whitepaper,label:'H100 SXM5 的 8 GPC、66 TPC、132 SM、50 MB L2 与执行单元数量',kind:'NVIDIA 官方架构白皮书'}
   ],
   h200: [
     { title: 'NVIDIA H200 Tensor Core GPU', label: 'H200 SXM：141 GB HBM3e、4.8 TB/s 显存带宽、900 GB/s NVLink', url: 'https://www.nvidia.com/en-us/data-center/h200/', kind: 'NVIDIA 官方产品规格' },
@@ -61,7 +67,10 @@ const productSources = {
   ],
   h800: [
     { title: 'NVIDIA AI Enterprise · Hopper H800', label: 'H800 SXM5 80GB 产品支持与 MIG 配置', url: 'https://docs.nvidia.com/ai-enterprise/release-8/latest/infra-software/vgpu/reference/hopper-h800.html', kind: 'NVIDIA 官方产品文档' },
-    { title: 'NVIDIA H800 Tensor Core GPU · 2023 产品手册', label: 'SXM：80 GB、3.35 TB/s 显存带宽、400 GB/s NVLink；NVIDIA 原版手册，第三方镜像', url: 'https://serverflow.ru/upload/iblock/88a/2fg6cfwqo83oxx9nynevdxkdllj1hbmg/%D0%A1%D0%BF%D0%B5%D1%86%D0%B8%D1%84%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D1%8F%20NVIDIA%20H800.pdf', kind: 'NVIDIA 产品手册（第三方镜像）' }
+    { title: 'NVIDIA H800 Tensor Core GPU · 2023 产品手册', label: 'SXM：80 GB、3.35 TB/s 显存带宽、400 GB/s NVLink；NVIDIA 原版手册，第三方镜像', url: 'https://serverflow.ru/upload/iblock/88a/2fg6cfwqo83oxx9nynevdxkdllj1hbmg/%D0%A1%D0%BF%D0%B5%D1%86%D0%B8%D1%84%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D1%8F%20NVIDIA%20H800.pdf', kind: 'NVIDIA 产品手册（第三方镜像）' },
+    {...RS.h800sm,label:'DeepSeek 一手报告给出 H800 的 132 个 SM；不是照抄 H100 的产品参数',kind:'一手研究论文'},
+    {...RS.fabricH800,label:'每 GPU 各 2 条链路连接 4 个 NVSwitch，共 8 条 NVLink',kind:'NVIDIA 官方系统文档'},
+    {...RS.h800sxm,label:'H800 SXM5 132 SM 的一手内核优化与运行配置',kind:'一手软件技术文档'}
   ]
 };
 
@@ -83,8 +92,9 @@ export function getGpuComponents(id) {
   const gpu = getGpu(id);
   const components = adaptCopy(baseComponents, gpu.name);
   const productSource = gpu.id === 'h20' ? 0 : baseSources.length;
-  const bandwidthSource = gpu.id === 'h800' ? baseSources.length + 1 : productSource;
-  const architectureSource = gpu.id === 'h200' ? baseSources.length + 1 : 1;
+  const bandwidthSource = ['h20','h800'].includes(gpu.id) ? baseSources.length + 1 : productSource;
+  const architectureSource = gpu.id === 'h20' ? baseSources.length : gpu.id === 'h200' ? baseSources.length + 1 : baseSources.length + 2;
+  const resourceSpec = GPU_RESOURCE_SPECS[gpu.id];
   const hasBandwidth = !gpu.memoryBandwidth.startsWith('按');
 
   components.gpu.description = `${gpu.name} 使用 Hopper 架构，GPU 核心集成 SM、片上缓存与互联逻辑。模型权重和激活数据从 ${gpu.memoryType} 进入片上存储，再由执行单元完成计算。`;
@@ -94,34 +104,40 @@ export function getGpuComponents(id) {
   components.hbm.shortTitle = `${gpu.memoryType} 显存`;
   components.hbm.description = `HBM 把多层 DRAM 垂直堆叠，通过中介层与 GPU 核心相连。${gpu.name} ${gpu.formFactor} 的 ${gpu.memoryGB} GB ${gpu.memoryType} 用于容纳模型权重、激活值与随上下文增长的 KV Cache。`;
   components.hbm.stats = [['总容量', `${gpu.memoryGB} GB`], ['类型', gpu.memoryType], hasBandwidth ? ['显存带宽', gpu.memoryBandwidth] : ['用途', '权重 / KV Cache']];
+  if(gpu.id==='h20') {
+    components.hbm.stats[2][0]='带宽（研究配置）';
+    components.hbm.insight+=' 4.0 TB/s 来自公开 H20 实验平台，作为研究配置列示。';
+  }
   components.hbm.source = gpu.id === 'h100' ? baseSources.length + 1 : hasBandwidth ? bandwidthSource : productSource;
   components.substrate.stats[0] = ['模块', gpu.formFactor];
   components.substrate.source = productSource;
 
   if (!gpu.nvlinkBandwidth.startsWith('按')) {
     components.nvlink.stats = [['NVLink 带宽', gpu.nvlinkBandwidth], ['作用', 'GPU ↔ GPU'], ['场景', '多卡并行']];
-    components.nvlink.insight = `${gpu.name} ${gpu.formFactor} 的产品规格列出最高 ${gpu.nvlinkBandwidth} NVLink 总带宽。它与显存带宽属于不同数据路径；多卡吞吐仍受通信量、拓扑和通信与计算重叠情况影响。`;
-    components.nvlink.source = bandwidthSource;
+    components.nvlink.insight = `${gpu.name} 的 HGX 拓扑包含 ${resourceSpec.nvlinks.value} 条 NVLink。${gpu.id==='h20'?'900 GB/s 双向总带宽由 18 条 × 50 GB/s 推算':`产品规格列出 ${gpu.nvlinkBandwidth} 双向总带宽`}。它与显存带宽属于不同数据路径；多卡吞吐仍取决于通信量、拓扑及计算重叠。`;
+    components.nvlink.source = gpu.id==='h20'?baseSources.length+2:bandwidthSource;
   }
 
   if (gpu.activeSMs !== null) {
     components.gpc.stats = [['启用 SM', `${gpu.activeSMs} / GPU`], ['层级', 'GPU → GPC → SM'], ['布局', '逻辑示意']];
-    components.gpc.insight = `${gpu.name} 的公开配置包含 ${gpu.activeSMs} 个启用 SM。本图的集群数量、SM 方块与排布仍为教学抽象，不按方块数量还原物理芯片。`;
+    components.gpc.insight = `${gpu.name} 的${gpu.id==='h800'?'一手研究平台':'公开资料'}报告 ${gpu.activeSMs} 个启用 SM。本图的集群数量、SM 方块与排布仍为教学抽象，不按方块数量还原物理芯片。`;
     components.gpc.source = architectureSource;
     components.sm.insight = `${gpu.name} 的 SM 基于 Hopper 架构。图中展示计算、调度和存储的功能关系，方块数量不表示物理执行单元数量，内部位置与连线经过简化。`;
-    components.l2.stats = [['容量', '50 MB'], ['共享范围', '整个 GPU'], ['用途', '数据复用']];
-    components.l2.source = architectureSource;
-    components.cuda.stats = [['FP32 CUDA Core', '16,896 / GPU'], ['每个 SM', '128 FP32 CUDA Core'], ['执行方式', 'SIMT']];
+    if(resourceSpec.l2MB.value!==null){
+      components.l2.stats = [['容量', `${resourceSpec.l2MB.value} MB${gpu.id==='h20'?'（研究配置）':''}`], ['共享范围', '整个 GPU'], ['用途', '数据复用']];
+      components.l2.source = gpu.id==='h20'?baseSources.length+1:architectureSource;
+    }
+    components.cuda.stats = [['FP32 CUDA Core', `${(gpu.activeSMs*128).toLocaleString('en-US')} / GPU`], ['每个 SM', '128 FP32 CUDA Core'], ['执行方式', 'SIMT']];
     components.cuda.insight += ` ${gpu.name} 的数量按 ${gpu.activeSMs} 个 SM × 每 SM 128 个 FP32 CUDA Core 计算；图中方块仍为功能示意。`;
-    components.cuda.source = architectureSource;
-    components.tensor.stats = [['Tensor Core', '528 / GPU'], ['代际', '第四代'], ['精度示例', 'FP8 / BF16 / FP16']];
+    components.cuda.source = ['h20','h800'].includes(gpu.id)?1:architectureSource;
+    components.tensor.stats = [['Tensor Core', `${gpu.activeSMs*4} / GPU`], ['代际', '第四代'], ['精度示例', 'FP8 / BF16 / FP16']];
     components.tensor.insight += ` ${gpu.name} 的数量按 ${gpu.activeSMs} 个 SM × 每 SM 4 个 Tensor Core 计算。`;
-    components.tensor.source = architectureSource;
+    components.tensor.source = ['h20','h800'].includes(gpu.id)?1:architectureSource;
   }
 
   if (gpu.id === 'h800') {
     components.hbm.insight += ' 本页已核实 80 GB 容量；未独立核实所选 H800 的 HBM 代际，因此只标注 HBM。';
-    components.gpc.insight += ' H800 的启用 SM 总数未由本页资料直接核实，不从 H100 配置推断。';
+    components.l2.insight += ' 本页尚未直接核实 H800 SXM5 的 L2 容量，不套用其他型号的数字。';
   }
 
   if (gpu.id === 'h20') {

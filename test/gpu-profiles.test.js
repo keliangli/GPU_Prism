@@ -10,7 +10,8 @@ test('SXM profiles keep product memory and interconnect specifications separate'
   assert.equal(getGpu('h100').memoryGB,80);
   assert.equal(getGpu('h100').nvlinkBandwidth,'900 GB/s');
   assert.equal(getGpu('h800').nvlinkBandwidth,'400 GB/s');
-  assert.equal(getGpu('h800').activeSMs,null);
+  assert.equal(getGpu('h800').activeSMs,132);
+  assert.equal(getGpu('h20').activeSMs,78);
   assert.equal(getGpu('unlisted').id,'h20');
   assert.equal(getGpu('__proto__').id,'h20');
 });
@@ -53,7 +54,7 @@ test('inspector content follows the selected model without mutating shared data'
   assert.equal(h200.gpc.stats[0][1],'132 / GPU');
   assert.equal(h200.tensor.stats[0][1],'528 / GPU');
   assert.equal(h100.cuda.stats[0][1],'16,896 / GPU');
-  assert.ok(!JSON.stringify(h800.gpc.stats).includes('132'));
+  assert.equal(h800.gpc.stats[0][1],'132 / GPU');
   h200.hbm.stats[0][1]='changed';
   assert.equal(getGpuComponents('h200').hbm.stats[0][1],'141 GB');
   assert.equal(baseComponents.hbm.stats[0][1],'96 GB');
