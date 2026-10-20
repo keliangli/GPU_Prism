@@ -35,6 +35,26 @@ INFAR 是一个纯前端的 GPU 硬件架构学习站点。当前收录 11 款 G
 | 技术栈 | Vite 7 + 原生 ES 模块 + Three.js 0.180（无 UI 框架） |
 | 测试 | `node --test`（模型层单元测试） |
 
+## PyTorch 源码模块全景
+
+顶部新增「PyTorch 源码」标签（`#/pytorch`），基于本地 PyTorch 2.15.0a0 / `67148e2b81383e620af0518666619b65080e29e4` 的只读索引。
+
+- 5 个功能层、22 个子系统、90 个功能模块，按职责分层；下钻到模块，源码文件作为外部入口。
+- 3D 分层与平面层级、全局模块/路径搜索、面包屑、选择高亮、输入输出、范围文件统计。
+- 22 个子系统均可直接打开，例如 `#/pytorch/inductor`、`#/pytorch/distributed`；模块链接如 `#/pytorch/dynamo-guards` 保留模块选择并展示其父子系统。
+- 实线表示功能包含，虚线为人工整理的模块协作；不作为完整调用图或真实运行轨迹。未采集时间、次数或硬件利用率。
+- 源码链接固定提交，索引排除第三方子模块，统计 Python、C/C++、CUDA、头文件、YAML 和 CMake；包含测试和工具，不同目录范围不相加。
+- 手机默认平面层级；没有 WebGL 时使用平面视图。
+
+更新源码索引时，在本项目目录执行（不构建、不导入 PyTorch）：
+
+```powershell
+node scripts/index-pytorch.mjs --root 'D:\code\pytorch-main\pytorch-new'
+node --test
+```
+
+索引输出提交到 `src/pytorch-source-index.json`；正常构建与部署读取这个快照，不要求部署环境有本地 PyTorch 源码。
+
 ## 页面与路由
 
 站点为 SPA，使用 hash 路由，深链接可直接访问任意层级。

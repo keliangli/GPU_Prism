@@ -1,0 +1,2105 @@
+{
+  "version": "2.15.0a0",
+  "commit": "67148e2b81383e620af0518666619b65080e29e4",
+  "commitDate": "2026-10-01",
+  "repository": "https://github.com/pytorch/pytorch",
+  "indexedAt": "2026-10-20",
+  "trackedPaths": 22713,
+  "sourceFiles": 10667,
+  "hasSubmoduleChanges": true,
+  "method": "Tracked files, excluding third_party; .py/.pyi/C/C++/CUDA headers and sources/YAML/CMake. Curated functional grouping; overlapping scopes are not additive.",
+  "nodes": {
+    "pytorch": {
+      "sourceFiles": 10667,
+      "pythonFiles": 5019,
+      "cppFiles": 5286,
+      "paths": [
+        {
+          "path": "torch",
+          "directory": true
+        },
+        {
+          "path": "aten",
+          "directory": true
+        },
+        {
+          "path": "c10",
+          "directory": true
+        },
+        {
+          "path": "torchgen",
+          "directory": true
+        },
+        {
+          "path": "functorch",
+          "directory": true
+        }
+      ]
+    },
+    "interface": {
+      "sourceFiles": 303,
+      "pythonFiles": 303,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/nn/modules/module.py",
+          "directory": false,
+          "sha256": "d45ffef086877a34a464fb99ce944529bd13559b7b78f224e7150625e4dda5f3"
+        },
+        {
+          "path": "torch/nn/modules",
+          "directory": true
+        },
+        {
+          "path": "torch/nn/functional.py",
+          "directory": false,
+          "sha256": "55310acc98d6aadafa2ccae8b42d3436a0379c83a9e8879ae0a79b095d402e1c"
+        },
+        {
+          "path": "torch/nn/init.py",
+          "directory": false,
+          "sha256": "d93bfab2f672a9cc0c961f57ea8b2fcc10f82f74be257f74a4bcda43d55ba9c8"
+        },
+        {
+          "path": "torch/_tensor.py",
+          "directory": false,
+          "sha256": "a078e8e344b779c57395eeca1659b250bdde20eb8e3ecae59a5dcbae177d65d2"
+        },
+        {
+          "path": "torch/linalg",
+          "directory": true
+        },
+        {
+          "path": "torch/fft",
+          "directory": true
+        },
+        {
+          "path": "torch/special",
+          "directory": true
+        },
+        {
+          "path": "torch/sparse",
+          "directory": true
+        },
+        {
+          "path": "torch/nested",
+          "directory": true
+        },
+        {
+          "path": "torch/_numpy",
+          "directory": true
+        },
+        {
+          "path": "torch/optim/optimizer.py",
+          "directory": false,
+          "sha256": "259833543c77dc5ea47417ce289fd1a304f07d6e87483314cee02e26f985b1eb"
+        },
+        {
+          "path": "torch/optim",
+          "directory": true
+        },
+        {
+          "path": "torch/amp",
+          "directory": true
+        },
+        {
+          "path": "torch/func",
+          "directory": true
+        },
+        {
+          "path": "torch/utils/data/dataset.py",
+          "directory": false,
+          "sha256": "f2776f0f8970c3e0ae39e0f2da6eda6ea91fff263b152743673d973f2bcc0b54"
+        },
+        {
+          "path": "torch/utils/data/dataloader.py",
+          "directory": false,
+          "sha256": "8685561ded9e3c7d75cd4184694ad3149992a690cba0bcad5e0d6f20ab81c8b6"
+        },
+        {
+          "path": "torch/utils/data/sampler.py",
+          "directory": false,
+          "sha256": "cb6379f5d3cf733faa220ac49b9f4d729567ec3c2639a71fd9fd7de92adcd420"
+        },
+        {
+          "path": "torch/utils/data/_utils/collate.py",
+          "directory": false,
+          "sha256": "09a39cc8cfcffb217a31af4650a352d8f60ce42d98686233a468b7bf7bc9906f"
+        },
+        {
+          "path": "torch/ao",
+          "directory": true
+        },
+        {
+          "path": "torch/quantization",
+          "directory": true
+        },
+        {
+          "path": "torch/ao/quantization/fx",
+          "directory": true
+        },
+        {
+          "path": "torch/nn/utils/prune.py",
+          "directory": false,
+          "sha256": "c7abd455da96db52f825da67b5b76da2c760514e917d03e501cf6c422eb18726"
+        }
+      ]
+    },
+    "graphs": {
+      "sourceFiles": 590,
+      "pythonFiles": 486,
+      "cppFiles": 104,
+      "paths": [
+        {
+          "path": "torch/fx",
+          "directory": true
+        },
+        {
+          "path": "torch/export",
+          "directory": true
+        },
+        {
+          "path": "torch/onnx",
+          "directory": true
+        },
+        {
+          "path": "torch/_decomp",
+          "directory": true
+        },
+        {
+          "path": "torch/_dynamo/eval_frame.py",
+          "directory": false,
+          "sha256": "4f7654c39809ac669abe970839fbee655f812efa1c46256318f7f4670bc83ac8"
+        },
+        {
+          "path": "torch/_dynamo/symbolic_convert.py",
+          "directory": false,
+          "sha256": "3ff22e278ed634add895b64eef06f44a704e8a2b7e9e8eee2b56ef4b592adfa2"
+        },
+        {
+          "path": "torch/_dynamo/output_graph.py",
+          "directory": false,
+          "sha256": "805fca6e76ee11c9f57ade95fcf73b2b0ee62026f649f24d243c900e9a908a7e"
+        },
+        {
+          "path": "torch/_dynamo/guards.py",
+          "directory": false,
+          "sha256": "faaebe43bf8e018015b48a9984895e0cfcd2a1f454d2284cca7bce03d316d5c1"
+        },
+        {
+          "path": "torch/_dynamo/resume_execution.py",
+          "directory": false,
+          "sha256": "5480cc0ef82120601b8e9749932f5bf453c8b5a8f9dcaffde02b7bd1811c4f60"
+        },
+        {
+          "path": "torch/_functorch/aot_autograd.py",
+          "directory": false,
+          "sha256": "ad36a8931de559ea481dea7f6c680173d692403bc49b26319d6eaa4084ab5fc7"
+        },
+        {
+          "path": "torch/_functorch/_aot_autograd/graph_compile.py",
+          "directory": false,
+          "sha256": "a0c90223e5bc6b5e75fc02a070985467fa6a35db830cefaf7a9789e9ef07bc32"
+        },
+        {
+          "path": "torch/_functorch/partitioners.py",
+          "directory": false,
+          "sha256": "8b7742901a013e005f2837757bd9710dbec7a0a115d58a836dadb64e56077928"
+        },
+        {
+          "path": "torch/_functorch",
+          "directory": true
+        },
+        {
+          "path": "torch/_higher_order_ops",
+          "directory": true
+        },
+        {
+          "path": "torch/_inductor/compile_fx.py",
+          "directory": false,
+          "sha256": "03b9734462cc443a8196b5446971a4a87d6b00e3f1afd10d34d84f8328abfa16"
+        },
+        {
+          "path": "torch/_inductor/graph.py",
+          "directory": false,
+          "sha256": "ac8337a4da481d01c362d49ad47144688e2e4ae57881013b5081461d26de5bca"
+        },
+        {
+          "path": "torch/_inductor/scheduler.py",
+          "directory": false,
+          "sha256": "3717c55ca9574a2c47e944f6ff05e37414d2163a45405307dacec0483a72ec65"
+        },
+        {
+          "path": "torch/_inductor/codegen",
+          "directory": true
+        },
+        {
+          "path": "torch/_inductor/debug.py",
+          "directory": false,
+          "sha256": "4011bb3c8a2d8c4d5c25442bd3816461ae205152a2488a1e1550dafa11369c71"
+        },
+        {
+          "path": "torch/jit",
+          "directory": true
+        },
+        {
+          "path": "torch/_lazy",
+          "directory": true
+        },
+        {
+          "path": "torch/nativert",
+          "directory": true
+        }
+      ]
+    },
+    "execution": {
+      "sourceFiles": 3884,
+      "pythonFiles": 113,
+      "cppFiles": 3750,
+      "paths": [
+        {
+          "path": "torch/csrc",
+          "directory": true
+        },
+        {
+          "path": "torchgen",
+          "directory": true
+        },
+        {
+          "path": "tools/autograd",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/native_functions.yaml",
+          "directory": false,
+          "sha256": "587f31a7538f2e67163db49b92b148afaad3662f33b65c947c49209ea74e550a"
+        },
+        {
+          "path": "aten/src/ATen/core/dispatch/Dispatcher.h",
+          "directory": false,
+          "sha256": "139fa0d51adf081717a4af21149bb87f9d55f00acc0e78e0b814d465414ae0f3"
+        },
+        {
+          "path": "c10/core/DispatchKey.h",
+          "directory": false,
+          "sha256": "febd0c7fcfcb3623ab7a8ad2337e25abe403203a44500b53d17331a8f9d6d23c"
+        },
+        {
+          "path": "torch/library.py",
+          "directory": false,
+          "sha256": "7926f1055cc01a305f10ad7a708f5483e51d87542f6caa0ec9a85c2454d996f3"
+        },
+        {
+          "path": "torch/_dispatch",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/Linear.cpp",
+          "directory": false,
+          "sha256": "9574e75dfe33f46ba6dfd677be3189bf0db8e3aec25ebcace548cc47a9bdc3ba"
+        },
+        {
+          "path": "aten/src/ATen/TensorIterator.h",
+          "directory": false,
+          "sha256": "e7b3b75a6dbf257e6f58c52ea81f78d53b26dd31ea9baaf91c213eefd75f3343"
+        },
+        {
+          "path": "torch/autograd",
+          "directory": true
+        },
+        {
+          "path": "torch/csrc/autograd/engine.cpp",
+          "directory": false,
+          "sha256": "2bd6718ac5c366617e9c5515ef64fa5286f8192d26ad721ab8774f6afd955d4f"
+        },
+        {
+          "path": "tools/autograd/derivatives.yaml",
+          "directory": false,
+          "sha256": "8c5c93f1f241516958291cd3d2071b1192f19f83a103ca39b44cfea041f3c1f3"
+        },
+        {
+          "path": "torch/autograd/graph.py",
+          "directory": false,
+          "sha256": "d22898d8f8fdd9bdad3f86f7dd428f8ce2b4838db69ae1e421c11643a6d005a6"
+        },
+        {
+          "path": "c10/core/TensorImpl.h",
+          "directory": false,
+          "sha256": "c9c8e976086a7e3301157d5b1e95508b1dfc2b7f0a68d633f7d34457a786458c"
+        },
+        {
+          "path": "c10/core/StorageImpl.h",
+          "directory": false,
+          "sha256": "1f71997ca5fe7d3e2f65a933b15ddf2c39f9ca7bbdaf41d656d9f5182e49fe7f"
+        },
+        {
+          "path": "c10/core",
+          "directory": true
+        },
+        {
+          "path": "c10/util",
+          "directory": true
+        }
+      ]
+    },
+    "devices": {
+      "sourceFiles": 791,
+      "pythonFiles": 69,
+      "cppFiles": 720,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/cpu",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/CPUBlas.cpp",
+          "directory": false,
+          "sha256": "a2a9879efd35a605de2d94d1b393fe35f88bf3a0bcd42f817b1cf426d70d8984"
+        },
+        {
+          "path": "aten/src/ATen/cpu",
+          "directory": true
+        },
+        {
+          "path": "torch/cuda",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/cuda",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/cuda",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/cudnn",
+          "directory": true
+        },
+        {
+          "path": "c10/cuda",
+          "directory": true
+        },
+        {
+          "path": "torch/xpu",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/mps",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/hip",
+          "directory": true
+        },
+        {
+          "path": "torch/accelerator",
+          "directory": true
+        },
+        {
+          "path": "torch/backends",
+          "directory": true
+        },
+        {
+          "path": "torch/mtia",
+          "directory": true
+        },
+        {
+          "path": "torch/utils/backend_registration.py",
+          "directory": false,
+          "sha256": "ba03cf4b1e3b11230f067dafd8ae38fbc1fbbc3b0683f021f1899908c50138aa"
+        }
+      ]
+    },
+    "systems": {
+      "sourceFiles": 2655,
+      "pythonFiles": 1978,
+      "cppFiles": 574,
+      "paths": [
+        {
+          "path": "torch/distributed/distributed_c10d.py",
+          "directory": false,
+          "sha256": "aac360e7bfe20cbb6a8b812d2d1c7d75175928a0f6a8e41ef643e58991ea2fbd"
+        },
+        {
+          "path": "torch/csrc/distributed/c10d",
+          "directory": true
+        },
+        {
+          "path": "torch/distributed/tensor",
+          "directory": true
+        },
+        {
+          "path": "torch/distributed/fsdp",
+          "directory": true
+        },
+        {
+          "path": "torch/distributed/rpc",
+          "directory": true
+        },
+        {
+          "path": "torch/profiler",
+          "directory": true
+        },
+        {
+          "path": "torch/_logging",
+          "directory": true
+        },
+        {
+          "path": "torch/utils/benchmark",
+          "directory": true
+        },
+        {
+          "path": "torch/serialization.py",
+          "directory": false,
+          "sha256": "be98c572b9c80b6d04052cd1da708736192177bf52e661d030664ade8bd9cd5f"
+        },
+        {
+          "path": "torch/distributed/checkpoint",
+          "directory": true
+        },
+        {
+          "path": "torch/package",
+          "directory": true
+        },
+        {
+          "path": "cmake",
+          "directory": true
+        },
+        {
+          "path": "torch/utils/cpp_extension.py",
+          "directory": false,
+          "sha256": "3ccb0ff7a76051d46a5bb9cf8c517d4bba58f7e143a20f7e67876d5a11be3072"
+        },
+        {
+          "path": "torch/testing",
+          "directory": true
+        },
+        {
+          "path": "test",
+          "directory": true
+        }
+      ]
+    },
+    "models": {
+      "sourceFiles": 30,
+      "pythonFiles": 30,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/nn/modules/module.py",
+          "directory": false,
+          "sha256": "d45ffef086877a34a464fb99ce944529bd13559b7b78f224e7150625e4dda5f3"
+        },
+        {
+          "path": "torch/nn/modules",
+          "directory": true
+        },
+        {
+          "path": "torch/nn/functional.py",
+          "directory": false,
+          "sha256": "55310acc98d6aadafa2ccae8b42d3436a0379c83a9e8879ae0a79b095d402e1c"
+        },
+        {
+          "path": "torch/nn/init.py",
+          "directory": false,
+          "sha256": "d93bfab2f672a9cc0c961f57ea8b2fcc10f82f74be257f74a4bcda43d55ba9c8"
+        }
+      ]
+    },
+    "models-module": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/nn/modules/module.py",
+          "directory": false,
+          "sha256": "d45ffef086877a34a464fb99ce944529bd13559b7b78f224e7150625e4dda5f3"
+        }
+      ]
+    },
+    "models-layers": {
+      "sourceFiles": 28,
+      "pythonFiles": 28,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/nn/modules",
+          "directory": true
+        }
+      ]
+    },
+    "models-functional": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/nn/functional.py",
+          "directory": false,
+          "sha256": "55310acc98d6aadafa2ccae8b42d3436a0379c83a9e8879ae0a79b095d402e1c"
+        }
+      ]
+    },
+    "models-initialization": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/nn/init.py",
+          "directory": false,
+          "sha256": "d93bfab2f672a9cc0c961f57ea8b2fcc10f82f74be257f74a4bcda43d55ba9c8"
+        }
+      ]
+    },
+    "tensors": {
+      "sourceFiles": 35,
+      "pythonFiles": 35,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_tensor.py",
+          "directory": false,
+          "sha256": "a078e8e344b779c57395eeca1659b250bdde20eb8e3ecae59a5dcbae177d65d2"
+        },
+        {
+          "path": "torch/linalg",
+          "directory": true
+        },
+        {
+          "path": "torch/fft",
+          "directory": true
+        },
+        {
+          "path": "torch/special",
+          "directory": true
+        },
+        {
+          "path": "torch/sparse",
+          "directory": true
+        },
+        {
+          "path": "torch/nested",
+          "directory": true
+        },
+        {
+          "path": "torch/_numpy",
+          "directory": true
+        }
+      ]
+    },
+    "tensors-tensor": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_tensor.py",
+          "directory": false,
+          "sha256": "a078e8e344b779c57395eeca1659b250bdde20eb8e3ecae59a5dcbae177d65d2"
+        }
+      ]
+    },
+    "tensors-linalg": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/linalg",
+          "directory": true
+        }
+      ]
+    },
+    "tensors-fft": {
+      "sourceFiles": 2,
+      "pythonFiles": 2,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/fft",
+          "directory": true
+        },
+        {
+          "path": "torch/special",
+          "directory": true
+        }
+      ]
+    },
+    "tensors-sparse": {
+      "sourceFiles": 12,
+      "pythonFiles": 12,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/sparse",
+          "directory": true
+        },
+        {
+          "path": "torch/nested",
+          "directory": true
+        }
+      ]
+    },
+    "tensors-numpy": {
+      "sourceFiles": 19,
+      "pythonFiles": 19,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_numpy",
+          "directory": true
+        }
+      ]
+    },
+    "training": {
+      "sourceFiles": 29,
+      "pythonFiles": 29,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/optim/optimizer.py",
+          "directory": false,
+          "sha256": "259833543c77dc5ea47417ce289fd1a304f07d6e87483314cee02e26f985b1eb"
+        },
+        {
+          "path": "torch/optim",
+          "directory": true
+        },
+        {
+          "path": "torch/amp",
+          "directory": true
+        },
+        {
+          "path": "torch/func",
+          "directory": true
+        }
+      ]
+    },
+    "training-optimizer": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/optim/optimizer.py",
+          "directory": false,
+          "sha256": "259833543c77dc5ea47417ce289fd1a304f07d6e87483314cee02e26f985b1eb"
+        }
+      ]
+    },
+    "training-algorithms": {
+      "sourceFiles": 24,
+      "pythonFiles": 24,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/optim",
+          "directory": true
+        }
+      ]
+    },
+    "training-amp": {
+      "sourceFiles": 3,
+      "pythonFiles": 3,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/amp",
+          "directory": true
+        }
+      ]
+    },
+    "training-transforms": {
+      "sourceFiles": 2,
+      "pythonFiles": 2,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/func",
+          "directory": true
+        }
+      ]
+    },
+    "data": {
+      "sourceFiles": 4,
+      "pythonFiles": 4,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/utils/data/dataset.py",
+          "directory": false,
+          "sha256": "f2776f0f8970c3e0ae39e0f2da6eda6ea91fff263b152743673d973f2bcc0b54"
+        },
+        {
+          "path": "torch/utils/data/dataloader.py",
+          "directory": false,
+          "sha256": "8685561ded9e3c7d75cd4184694ad3149992a690cba0bcad5e0d6f20ab81c8b6"
+        },
+        {
+          "path": "torch/utils/data/sampler.py",
+          "directory": false,
+          "sha256": "cb6379f5d3cf733faa220ac49b9f4d729567ec3c2639a71fd9fd7de92adcd420"
+        },
+        {
+          "path": "torch/utils/data/_utils/collate.py",
+          "directory": false,
+          "sha256": "09a39cc8cfcffb217a31af4650a352d8f60ce42d98686233a468b7bf7bc9906f"
+        }
+      ]
+    },
+    "data-dataset": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/utils/data/dataset.py",
+          "directory": false,
+          "sha256": "f2776f0f8970c3e0ae39e0f2da6eda6ea91fff263b152743673d973f2bcc0b54"
+        }
+      ]
+    },
+    "data-dataloader": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/utils/data/dataloader.py",
+          "directory": false,
+          "sha256": "8685561ded9e3c7d75cd4184694ad3149992a690cba0bcad5e0d6f20ab81c8b6"
+        }
+      ]
+    },
+    "data-sampler": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/utils/data/sampler.py",
+          "directory": false,
+          "sha256": "cb6379f5d3cf733faa220ac49b9f4d729567ec3c2639a71fd9fd7de92adcd420"
+        }
+      ]
+    },
+    "data-collate": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/utils/data/_utils/collate.py",
+          "directory": false,
+          "sha256": "09a39cc8cfcffb217a31af4650a352d8f60ce42d98686233a468b7bf7bc9906f"
+        }
+      ]
+    },
+    "quantization": {
+      "sourceFiles": 205,
+      "pythonFiles": 205,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/ao",
+          "directory": true
+        },
+        {
+          "path": "torch/quantization",
+          "directory": true
+        },
+        {
+          "path": "torch/ao/quantization/fx",
+          "directory": true
+        },
+        {
+          "path": "torch/nn/utils/prune.py",
+          "directory": false,
+          "sha256": "c7abd455da96db52f825da67b5b76da2c760514e917d03e501cf6c422eb18726"
+        }
+      ]
+    },
+    "quantization-ao": {
+      "sourceFiles": 176,
+      "pythonFiles": 176,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/ao",
+          "directory": true
+        }
+      ]
+    },
+    "quantization-quantapi": {
+      "sourceFiles": 28,
+      "pythonFiles": 28,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/quantization",
+          "directory": true
+        }
+      ]
+    },
+    "quantization-quantfx": {
+      "sourceFiles": 24,
+      "pythonFiles": 24,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/ao/quantization/fx",
+          "directory": true
+        }
+      ]
+    },
+    "quantization-pruning": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/nn/utils/prune.py",
+          "directory": false,
+          "sha256": "c7abd455da96db52f825da67b5b76da2c760514e917d03e501cf6c422eb18726"
+        }
+      ]
+    },
+    "capture": {
+      "sourceFiles": 231,
+      "pythonFiles": 231,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/fx",
+          "directory": true
+        },
+        {
+          "path": "torch/export",
+          "directory": true
+        },
+        {
+          "path": "torch/onnx",
+          "directory": true
+        },
+        {
+          "path": "torch/_decomp",
+          "directory": true
+        }
+      ]
+    },
+    "capture-fx": {
+      "sourceFiles": 108,
+      "pythonFiles": 108,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/fx",
+          "directory": true
+        }
+      ]
+    },
+    "capture-export": {
+      "sourceFiles": 27,
+      "pythonFiles": 27,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/export",
+          "directory": true
+        }
+      ]
+    },
+    "capture-onnx": {
+      "sourceFiles": 92,
+      "pythonFiles": 92,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/onnx",
+          "directory": true
+        }
+      ]
+    },
+    "capture-decompositions": {
+      "sourceFiles": 4,
+      "pythonFiles": 4,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_decomp",
+          "directory": true
+        }
+      ]
+    },
+    "dynamo": {
+      "sourceFiles": 5,
+      "pythonFiles": 5,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_dynamo/eval_frame.py",
+          "directory": false,
+          "sha256": "4f7654c39809ac669abe970839fbee655f812efa1c46256318f7f4670bc83ac8"
+        },
+        {
+          "path": "torch/_dynamo/symbolic_convert.py",
+          "directory": false,
+          "sha256": "3ff22e278ed634add895b64eef06f44a704e8a2b7e9e8eee2b56ef4b592adfa2"
+        },
+        {
+          "path": "torch/_dynamo/output_graph.py",
+          "directory": false,
+          "sha256": "805fca6e76ee11c9f57ade95fcf73b2b0ee62026f649f24d243c900e9a908a7e"
+        },
+        {
+          "path": "torch/_dynamo/guards.py",
+          "directory": false,
+          "sha256": "faaebe43bf8e018015b48a9984895e0cfcd2a1f454d2284cca7bce03d316d5c1"
+        },
+        {
+          "path": "torch/_dynamo/resume_execution.py",
+          "directory": false,
+          "sha256": "5480cc0ef82120601b8e9749932f5bf453c8b5a8f9dcaffde02b7bd1811c4f60"
+        }
+      ]
+    },
+    "dynamo-frames": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_dynamo/eval_frame.py",
+          "directory": false,
+          "sha256": "4f7654c39809ac669abe970839fbee655f812efa1c46256318f7f4670bc83ac8"
+        }
+      ]
+    },
+    "dynamo-symbolic": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_dynamo/symbolic_convert.py",
+          "directory": false,
+          "sha256": "3ff22e278ed634add895b64eef06f44a704e8a2b7e9e8eee2b56ef4b592adfa2"
+        }
+      ]
+    },
+    "dynamo-output": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_dynamo/output_graph.py",
+          "directory": false,
+          "sha256": "805fca6e76ee11c9f57ade95fcf73b2b0ee62026f649f24d243c900e9a908a7e"
+        }
+      ]
+    },
+    "dynamo-guards": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_dynamo/guards.py",
+          "directory": false,
+          "sha256": "faaebe43bf8e018015b48a9984895e0cfcd2a1f454d2284cca7bce03d316d5c1"
+        }
+      ]
+    },
+    "dynamo-resume": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_dynamo/resume_execution.py",
+          "directory": false,
+          "sha256": "5480cc0ef82120601b8e9749932f5bf453c8b5a8f9dcaffde02b7bd1811c4f60"
+        }
+      ]
+    },
+    "aot": {
+      "sourceFiles": 95,
+      "pythonFiles": 95,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_functorch/aot_autograd.py",
+          "directory": false,
+          "sha256": "ad36a8931de559ea481dea7f6c680173d692403bc49b26319d6eaa4084ab5fc7"
+        },
+        {
+          "path": "torch/_functorch/_aot_autograd/graph_compile.py",
+          "directory": false,
+          "sha256": "a0c90223e5bc6b5e75fc02a070985467fa6a35db830cefaf7a9789e9ef07bc32"
+        },
+        {
+          "path": "torch/_functorch/partitioners.py",
+          "directory": false,
+          "sha256": "8b7742901a013e005f2837757bd9710dbec7a0a115d58a836dadb64e56077928"
+        },
+        {
+          "path": "torch/_functorch",
+          "directory": true
+        },
+        {
+          "path": "torch/_higher_order_ops",
+          "directory": true
+        }
+      ]
+    },
+    "aot-aotentry": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_functorch/aot_autograd.py",
+          "directory": false,
+          "sha256": "ad36a8931de559ea481dea7f6c680173d692403bc49b26319d6eaa4084ab5fc7"
+        }
+      ]
+    },
+    "aot-aotgraph": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_functorch/_aot_autograd/graph_compile.py",
+          "directory": false,
+          "sha256": "a0c90223e5bc6b5e75fc02a070985467fa6a35db830cefaf7a9789e9ef07bc32"
+        }
+      ]
+    },
+    "aot-partition": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_functorch/partitioners.py",
+          "directory": false,
+          "sha256": "8b7742901a013e005f2837757bd9710dbec7a0a115d58a836dadb64e56077928"
+        }
+      ]
+    },
+    "aot-functionalization": {
+      "sourceFiles": 95,
+      "pythonFiles": 95,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_functorch",
+          "directory": true
+        },
+        {
+          "path": "torch/_higher_order_ops",
+          "directory": true
+        }
+      ]
+    },
+    "inductor": {
+      "sourceFiles": 112,
+      "pythonFiles": 110,
+      "cppFiles": 2,
+      "paths": [
+        {
+          "path": "torch/_inductor/compile_fx.py",
+          "directory": false,
+          "sha256": "03b9734462cc443a8196b5446971a4a87d6b00e3f1afd10d34d84f8328abfa16"
+        },
+        {
+          "path": "torch/_inductor/graph.py",
+          "directory": false,
+          "sha256": "ac8337a4da481d01c362d49ad47144688e2e4ae57881013b5081461d26de5bca"
+        },
+        {
+          "path": "torch/_inductor/scheduler.py",
+          "directory": false,
+          "sha256": "3717c55ca9574a2c47e944f6ff05e37414d2163a45405307dacec0483a72ec65"
+        },
+        {
+          "path": "torch/_inductor/codegen",
+          "directory": true
+        },
+        {
+          "path": "torch/_inductor/debug.py",
+          "directory": false,
+          "sha256": "4011bb3c8a2d8c4d5c25442bd3816461ae205152a2488a1e1550dafa11369c71"
+        }
+      ]
+    },
+    "inductor-compilefx": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_inductor/compile_fx.py",
+          "directory": false,
+          "sha256": "03b9734462cc443a8196b5446971a4a87d6b00e3f1afd10d34d84f8328abfa16"
+        }
+      ]
+    },
+    "inductor-lowering": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_inductor/graph.py",
+          "directory": false,
+          "sha256": "ac8337a4da481d01c362d49ad47144688e2e4ae57881013b5081461d26de5bca"
+        }
+      ]
+    },
+    "inductor-scheduling": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_inductor/scheduler.py",
+          "directory": false,
+          "sha256": "3717c55ca9574a2c47e944f6ff05e37414d2163a45405307dacec0483a72ec65"
+        }
+      ]
+    },
+    "inductor-codegen": {
+      "sourceFiles": 108,
+      "pythonFiles": 106,
+      "cppFiles": 2,
+      "paths": [
+        {
+          "path": "torch/_inductor/codegen",
+          "directory": true
+        }
+      ]
+    },
+    "inductor-provenance": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_inductor/debug.py",
+          "directory": false,
+          "sha256": "4011bb3c8a2d8c4d5c25442bd3816461ae205152a2488a1e1550dafa11369c71"
+        }
+      ]
+    },
+    "deployment": {
+      "sourceFiles": 147,
+      "pythonFiles": 45,
+      "cppFiles": 102,
+      "paths": [
+        {
+          "path": "torch/jit",
+          "directory": true
+        },
+        {
+          "path": "torch/_lazy",
+          "directory": true
+        },
+        {
+          "path": "torch/nativert",
+          "directory": true
+        }
+      ]
+    },
+    "deployment-jit": {
+      "sourceFiles": 30,
+      "pythonFiles": 30,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/jit",
+          "directory": true
+        }
+      ]
+    },
+    "deployment-lazy": {
+      "sourceFiles": 11,
+      "pythonFiles": 11,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_lazy",
+          "directory": true
+        }
+      ]
+    },
+    "deployment-nativert": {
+      "sourceFiles": 106,
+      "pythonFiles": 4,
+      "cppFiles": 102,
+      "paths": [
+        {
+          "path": "torch/nativert",
+          "directory": true
+        }
+      ]
+    },
+    "bindings": {
+      "sourceFiles": 2016,
+      "pythonFiles": 88,
+      "cppFiles": 1924,
+      "paths": [
+        {
+          "path": "torch/csrc",
+          "directory": true
+        },
+        {
+          "path": "torchgen",
+          "directory": true
+        },
+        {
+          "path": "tools/autograd",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/native_functions.yaml",
+          "directory": false,
+          "sha256": "587f31a7538f2e67163db49b92b148afaad3662f33b65c947c49209ea74e550a"
+        }
+      ]
+    },
+    "bindings-pythonbinding": {
+      "sourceFiles": 1906,
+      "pythonFiles": 3,
+      "cppFiles": 1902,
+      "paths": [
+        {
+          "path": "torch/csrc",
+          "directory": true
+        }
+      ]
+    },
+    "bindings-torchgen": {
+      "sourceFiles": 73,
+      "pythonFiles": 73,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torchgen",
+          "directory": true
+        }
+      ]
+    },
+    "bindings-autogradgen": {
+      "sourceFiles": 36,
+      "pythonFiles": 12,
+      "cppFiles": 22,
+      "paths": [
+        {
+          "path": "tools/autograd",
+          "directory": true
+        }
+      ]
+    },
+    "bindings-schemas": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/native_functions.yaml",
+          "directory": false,
+          "sha256": "587f31a7538f2e67163db49b92b148afaad3662f33b65c947c49209ea74e550a"
+        }
+      ]
+    },
+    "dispatch": {
+      "sourceFiles": 5,
+      "pythonFiles": 3,
+      "cppFiles": 2,
+      "paths": [
+        {
+          "path": "aten/src/ATen/core/dispatch/Dispatcher.h",
+          "directory": false,
+          "sha256": "139fa0d51adf081717a4af21149bb87f9d55f00acc0e78e0b814d465414ae0f3"
+        },
+        {
+          "path": "c10/core/DispatchKey.h",
+          "directory": false,
+          "sha256": "febd0c7fcfcb3623ab7a8ad2337e25abe403203a44500b53d17331a8f9d6d23c"
+        },
+        {
+          "path": "torch/library.py",
+          "directory": false,
+          "sha256": "7926f1055cc01a305f10ad7a708f5483e51d87542f6caa0ec9a85c2454d996f3"
+        },
+        {
+          "path": "torch/_dispatch",
+          "directory": true
+        }
+      ]
+    },
+    "dispatch-dispatcher": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "aten/src/ATen/core/dispatch/Dispatcher.h",
+          "directory": false,
+          "sha256": "139fa0d51adf081717a4af21149bb87f9d55f00acc0e78e0b814d465414ae0f3"
+        }
+      ]
+    },
+    "dispatch-keys": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "c10/core/DispatchKey.h",
+          "directory": false,
+          "sha256": "febd0c7fcfcb3623ab7a8ad2337e25abe403203a44500b53d17331a8f9d6d23c"
+        }
+      ]
+    },
+    "dispatch-library": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/library.py",
+          "directory": false,
+          "sha256": "7926f1055cc01a305f10ad7a708f5483e51d87542f6caa0ec9a85c2454d996f3"
+        }
+      ]
+    },
+    "dispatch-dispatchtools": {
+      "sourceFiles": 2,
+      "pythonFiles": 2,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_dispatch",
+          "directory": true
+        }
+      ]
+    },
+    "aten": {
+      "sourceFiles": 1577,
+      "pythonFiles": 7,
+      "cppFiles": 1552,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/Linear.cpp",
+          "directory": false,
+          "sha256": "9574e75dfe33f46ba6dfd677be3189bf0db8e3aec25ebcace548cc47a9bdc3ba"
+        },
+        {
+          "path": "aten/src/ATen/TensorIterator.h",
+          "directory": false,
+          "sha256": "e7b3b75a6dbf257e6f58c52ea81f78d53b26dd31ea9baaf91c213eefd75f3343"
+        }
+      ]
+    },
+    "aten-native": {
+      "sourceFiles": 1576,
+      "pythonFiles": 7,
+      "cppFiles": 1551,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native",
+          "directory": true
+        }
+      ]
+    },
+    "aten-linearimpl": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/Linear.cpp",
+          "directory": false,
+          "sha256": "9574e75dfe33f46ba6dfd677be3189bf0db8e3aec25ebcace548cc47a9bdc3ba"
+        }
+      ]
+    },
+    "aten-iteration": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "aten/src/ATen/TensorIterator.h",
+          "directory": false,
+          "sha256": "e7b3b75a6dbf257e6f58c52ea81f78d53b26dd31ea9baaf91c213eefd75f3343"
+        }
+      ]
+    },
+    "aten-meta": {
+      "sourceFiles": 1576,
+      "pythonFiles": 7,
+      "cppFiles": 1551,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native",
+          "directory": true
+        }
+      ]
+    },
+    "autograd": {
+      "sourceFiles": 17,
+      "pythonFiles": 15,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "torch/autograd",
+          "directory": true
+        },
+        {
+          "path": "torch/csrc/autograd/engine.cpp",
+          "directory": false,
+          "sha256": "2bd6718ac5c366617e9c5515ef64fa5286f8192d26ad721ab8774f6afd955d4f"
+        },
+        {
+          "path": "tools/autograd/derivatives.yaml",
+          "directory": false,
+          "sha256": "8c5c93f1f241516958291cd3d2071b1192f19f83a103ca39b44cfea041f3c1f3"
+        },
+        {
+          "path": "torch/autograd/graph.py",
+          "directory": false,
+          "sha256": "d22898d8f8fdd9bdad3f86f7dd428f8ce2b4838db69ae1e421c11643a6d005a6"
+        }
+      ]
+    },
+    "autograd-autogradapi": {
+      "sourceFiles": 15,
+      "pythonFiles": 15,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/autograd",
+          "directory": true
+        }
+      ]
+    },
+    "autograd-engine": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "torch/csrc/autograd/engine.cpp",
+          "directory": false,
+          "sha256": "2bd6718ac5c366617e9c5515ef64fa5286f8192d26ad721ab8774f6afd955d4f"
+        }
+      ]
+    },
+    "autograd-gradientrules": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "tools/autograd/derivatives.yaml",
+          "directory": false,
+          "sha256": "8c5c93f1f241516958291cd3d2071b1192f19f83a103ca39b44cfea041f3c1f3"
+        }
+      ]
+    },
+    "autograd-savedtensors": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/autograd/graph.py",
+          "directory": false,
+          "sha256": "d22898d8f8fdd9bdad3f86f7dd428f8ce2b4838db69ae1e421c11643a6d005a6"
+        }
+      ]
+    },
+    "core": {
+      "sourceFiles": 273,
+      "pythonFiles": 0,
+      "cppFiles": 273,
+      "paths": [
+        {
+          "path": "c10/core/TensorImpl.h",
+          "directory": false,
+          "sha256": "c9c8e976086a7e3301157d5b1e95508b1dfc2b7f0a68d633f7d34457a786458c"
+        },
+        {
+          "path": "c10/core/StorageImpl.h",
+          "directory": false,
+          "sha256": "1f71997ca5fe7d3e2f65a933b15ddf2c39f9ca7bbdaf41d656d9f5182e49fe7f"
+        },
+        {
+          "path": "c10/core",
+          "directory": true
+        },
+        {
+          "path": "c10/util",
+          "directory": true
+        }
+      ]
+    },
+    "core-tensorimpl": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "c10/core/TensorImpl.h",
+          "directory": false,
+          "sha256": "c9c8e976086a7e3301157d5b1e95508b1dfc2b7f0a68d633f7d34457a786458c"
+        }
+      ]
+    },
+    "core-storage": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "c10/core/StorageImpl.h",
+          "directory": false,
+          "sha256": "1f71997ca5fe7d3e2f65a933b15ddf2c39f9ca7bbdaf41d656d9f5182e49fe7f"
+        }
+      ]
+    },
+    "core-types": {
+      "sourceFiles": 116,
+      "pythonFiles": 0,
+      "cppFiles": 116,
+      "paths": [
+        {
+          "path": "c10/core",
+          "directory": true
+        }
+      ]
+    },
+    "core-utilities": {
+      "sourceFiles": 157,
+      "pythonFiles": 0,
+      "cppFiles": 157,
+      "paths": [
+        {
+          "path": "c10/util",
+          "directory": true
+        }
+      ]
+    },
+    "cpu": {
+      "sourceFiles": 171,
+      "pythonFiles": 0,
+      "cppFiles": 171,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/cpu",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/CPUBlas.cpp",
+          "directory": false,
+          "sha256": "a2a9879efd35a605de2d94d1b393fe35f88bf3a0bcd42f817b1cf426d70d8984"
+        },
+        {
+          "path": "aten/src/ATen/cpu",
+          "directory": true
+        }
+      ]
+    },
+    "cpu-cpunative": {
+      "sourceFiles": 98,
+      "pythonFiles": 0,
+      "cppFiles": 98,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/cpu",
+          "directory": true
+        }
+      ]
+    },
+    "cpu-cpublas": {
+      "sourceFiles": 1,
+      "pythonFiles": 0,
+      "cppFiles": 1,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/CPUBlas.cpp",
+          "directory": false,
+          "sha256": "a2a9879efd35a605de2d94d1b393fe35f88bf3a0bcd42f817b1cf426d70d8984"
+        }
+      ]
+    },
+    "cpu-vectorization": {
+      "sourceFiles": 72,
+      "pythonFiles": 0,
+      "cppFiles": 72,
+      "paths": [
+        {
+          "path": "aten/src/ATen/cpu",
+          "directory": true
+        }
+      ]
+    },
+    "cuda": {
+      "sourceFiles": 527,
+      "pythonFiles": 27,
+      "cppFiles": 498,
+      "paths": [
+        {
+          "path": "torch/cuda",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/cuda",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/cuda",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/cudnn",
+          "directory": true
+        },
+        {
+          "path": "c10/cuda",
+          "directory": true
+        }
+      ]
+    },
+    "cuda-cudaapi": {
+      "sourceFiles": 27,
+      "pythonFiles": 27,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/cuda",
+          "directory": true
+        }
+      ]
+    },
+    "cuda-cudakernels": {
+      "sourceFiles": 341,
+      "pythonFiles": 0,
+      "cppFiles": 341,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/cuda",
+          "directory": true
+        }
+      ]
+    },
+    "cuda-cudalibs": {
+      "sourceFiles": 100,
+      "pythonFiles": 0,
+      "cppFiles": 100,
+      "paths": [
+        {
+          "path": "aten/src/ATen/cuda",
+          "directory": true
+        }
+      ]
+    },
+    "cuda-cudnn": {
+      "sourceFiles": 14,
+      "pythonFiles": 0,
+      "cppFiles": 14,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/cudnn",
+          "directory": true
+        }
+      ]
+    },
+    "cuda-cudamemory": {
+      "sourceFiles": 45,
+      "pythonFiles": 0,
+      "cppFiles": 43,
+      "paths": [
+        {
+          "path": "c10/cuda",
+          "directory": true
+        }
+      ]
+    },
+    "otherdevices": {
+      "sourceFiles": 93,
+      "pythonFiles": 42,
+      "cppFiles": 51,
+      "paths": [
+        {
+          "path": "torch/xpu",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/native/mps",
+          "directory": true
+        },
+        {
+          "path": "aten/src/ATen/hip",
+          "directory": true
+        },
+        {
+          "path": "torch/accelerator",
+          "directory": true
+        },
+        {
+          "path": "torch/backends",
+          "directory": true
+        },
+        {
+          "path": "torch/mtia",
+          "directory": true
+        },
+        {
+          "path": "torch/utils/backend_registration.py",
+          "directory": false,
+          "sha256": "ba03cf4b1e3b11230f067dafd8ae38fbc1fbbc3b0683f021f1899908c50138aa"
+        }
+      ]
+    },
+    "otherdevices-xpu": {
+      "sourceFiles": 7,
+      "pythonFiles": 7,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/xpu",
+          "directory": true
+        }
+      ]
+    },
+    "otherdevices-mps": {
+      "sourceFiles": 46,
+      "pythonFiles": 0,
+      "cppFiles": 46,
+      "paths": [
+        {
+          "path": "aten/src/ATen/native/mps",
+          "directory": true
+        }
+      ]
+    },
+    "otherdevices-hip": {
+      "sourceFiles": 5,
+      "pythonFiles": 0,
+      "cppFiles": 5,
+      "paths": [
+        {
+          "path": "aten/src/ATen/hip",
+          "directory": true
+        }
+      ]
+    },
+    "otherdevices-deviceapi": {
+      "sourceFiles": 34,
+      "pythonFiles": 34,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/accelerator",
+          "directory": true
+        },
+        {
+          "path": "torch/backends",
+          "directory": true
+        },
+        {
+          "path": "torch/mtia",
+          "directory": true
+        }
+      ]
+    },
+    "otherdevices-privateuse": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/utils/backend_registration.py",
+          "directory": false,
+          "sha256": "ba03cf4b1e3b11230f067dafd8ae38fbc1fbbc3b0683f021f1899908c50138aa"
+        }
+      ]
+    },
+    "distributed": {
+      "sourceFiles": 295,
+      "pythonFiles": 102,
+      "cppFiles": 193,
+      "paths": [
+        {
+          "path": "torch/distributed/distributed_c10d.py",
+          "directory": false,
+          "sha256": "aac360e7bfe20cbb6a8b812d2d1c7d75175928a0f6a8e41ef643e58991ea2fbd"
+        },
+        {
+          "path": "torch/csrc/distributed/c10d",
+          "directory": true
+        },
+        {
+          "path": "torch/distributed/tensor",
+          "directory": true
+        },
+        {
+          "path": "torch/distributed/fsdp",
+          "directory": true
+        },
+        {
+          "path": "torch/distributed/rpc",
+          "directory": true
+        }
+      ]
+    },
+    "distributed-collectives": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/distributed/distributed_c10d.py",
+          "directory": false,
+          "sha256": "aac360e7bfe20cbb6a8b812d2d1c7d75175928a0f6a8e41ef643e58991ea2fbd"
+        }
+      ]
+    },
+    "distributed-processgroups": {
+      "sourceFiles": 193,
+      "pythonFiles": 0,
+      "cppFiles": 193,
+      "paths": [
+        {
+          "path": "torch/csrc/distributed/c10d",
+          "directory": true
+        }
+      ]
+    },
+    "distributed-dtensor": {
+      "sourceFiles": 59,
+      "pythonFiles": 59,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/distributed/tensor",
+          "directory": true
+        }
+      ]
+    },
+    "distributed-fsdp": {
+      "sourceFiles": 30,
+      "pythonFiles": 30,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/distributed/fsdp",
+          "directory": true
+        }
+      ]
+    },
+    "distributed-rpc": {
+      "sourceFiles": 12,
+      "pythonFiles": 12,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/distributed/rpc",
+          "directory": true
+        }
+      ]
+    },
+    "observability": {
+      "sourceFiles": 57,
+      "pythonFiles": 54,
+      "cppFiles": 3,
+      "paths": [
+        {
+          "path": "torch/profiler",
+          "directory": true
+        },
+        {
+          "path": "torch/_logging",
+          "directory": true
+        },
+        {
+          "path": "torch/utils/benchmark",
+          "directory": true
+        }
+      ]
+    },
+    "observability-profiler": {
+      "sourceFiles": 22,
+      "pythonFiles": 22,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/profiler",
+          "directory": true
+        }
+      ]
+    },
+    "observability-logging": {
+      "sourceFiles": 5,
+      "pythonFiles": 5,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/_logging",
+          "directory": true
+        }
+      ]
+    },
+    "observability-benchmark": {
+      "sourceFiles": 30,
+      "pythonFiles": 27,
+      "cppFiles": 3,
+      "paths": [
+        {
+          "path": "torch/utils/benchmark",
+          "directory": true
+        }
+      ]
+    },
+    "persistence": {
+      "sourceFiles": 73,
+      "pythonFiles": 73,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/serialization.py",
+          "directory": false,
+          "sha256": "be98c572b9c80b6d04052cd1da708736192177bf52e661d030664ade8bd9cd5f"
+        },
+        {
+          "path": "torch/distributed/checkpoint",
+          "directory": true
+        },
+        {
+          "path": "torch/package",
+          "directory": true
+        }
+      ]
+    },
+    "persistence-serialization": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/serialization.py",
+          "directory": false,
+          "sha256": "be98c572b9c80b6d04052cd1da708736192177bf52e661d030664ade8bd9cd5f"
+        }
+      ]
+    },
+    "persistence-checkpointing": {
+      "sourceFiles": 53,
+      "pythonFiles": 53,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/distributed/checkpoint",
+          "directory": true
+        }
+      ]
+    },
+    "persistence-package": {
+      "sourceFiles": 19,
+      "pythonFiles": 19,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/package",
+          "directory": true
+        }
+      ]
+    },
+    "engineering": {
+      "sourceFiles": 2230,
+      "pythonFiles": 1749,
+      "cppFiles": 378,
+      "paths": [
+        {
+          "path": "cmake",
+          "directory": true
+        },
+        {
+          "path": "torch/utils/cpp_extension.py",
+          "directory": false,
+          "sha256": "3ccb0ff7a76051d46a5bb9cf8c517d4bba58f7e143a20f7e67876d5a11be3072"
+        },
+        {
+          "path": "torch/testing",
+          "directory": true
+        },
+        {
+          "path": "test",
+          "directory": true
+        }
+      ]
+    },
+    "engineering-build": {
+      "sourceFiles": 74,
+      "pythonFiles": 0,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "cmake",
+          "directory": true
+        }
+      ]
+    },
+    "engineering-extensions": {
+      "sourceFiles": 1,
+      "pythonFiles": 1,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/utils/cpp_extension.py",
+          "directory": false,
+          "sha256": "3ccb0ff7a76051d46a5bb9cf8c517d4bba58f7e143a20f7e67876d5a11be3072"
+        }
+      ]
+    },
+    "engineering-testing": {
+      "sourceFiles": 113,
+      "pythonFiles": 113,
+      "cppFiles": 0,
+      "paths": [
+        {
+          "path": "torch/testing",
+          "directory": true
+        }
+      ]
+    },
+    "engineering-testsuite": {
+      "sourceFiles": 2042,
+      "pythonFiles": 1635,
+      "cppFiles": 378,
+      "paths": [
+        {
+          "path": "test",
+          "directory": true
+        }
+      ]
+    }
+  }
+}
