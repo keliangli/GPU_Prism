@@ -1,0 +1,415 @@
+<div class="llm-viewport">
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- 3D Projected HTML Floating Labels Layer -->
+  <div id="labels-container" class="pointer-events-none absolute inset-0 overflow-hidden z-10"></div>
+
+  <!-- Hover 3D Tooltip -->
+  <div id="hover-tooltip" class="absolute hidden pointer-events-none z-50 px-3 py-2 rounded-xl hud-glass border border-cyan-400/40 text-xs shadow-2xl transition-opacity duration-150">
+    <div id="tooltip-title" class="font-semibold text-white"></div>
+    <div id="tooltip-sub" class="text-cyan-300 font-mono text-[11px] mt-0.5"></div>
+    <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400"></span> 点击检视内部参数与公式 · 双击下钻层级
+    </div>
+  </div>
+
+</div>  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <header class="llm-topbar absolute top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <!-- Brand & Architecture Preset Switcher -->
+    <div class="flex flex-wrap items-center gap-2 pointer-events-auto hud-glass px-3.5 py-2 rounded-2xl">
+      <div class="flex items-center gap-2.5 pr-3 border-r border-slate-700/70">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+          <i data-lucide="boxes" class="w-4 h-4 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-bold text-sm tracking-tight text-white">LLM-Arch 3D</h1>
+            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">v2.5 Explorer</span>
+          </div>
+          <p class="text-[10px] text-slate-400 hidden sm:block">开源大模型架构与张量流 3D 拆解引擎</p>
+        </div>
+      </div>
+
+      <!-- Preset Buttons -->
+      <div class="flex items-center gap-1.5" id="preset-buttons">
+        <button data-preset="deepseek" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 bg-cyan-500/20 text-cyan-200 border border-cyan-400/50 shadow-sm shadow-cyan-500/20">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          <span>DeepSeek-V3 / R1</span>
+          <span class="hidden md:inline text-[10px] font-mono text-cyan-300/80">(MLA + MoE + MTP)</span>
+        </button>
+        <button data-preset="qwen" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Qwen3-32B / Llama-3</span>
+          <span class="hidden md:inline text-[10px] font-mono text-slate-400">(Dense GQA + SwiGLU)</span>
+        </button>
+        <button data-preset="hybrid" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">
+          <span class="w-2 h-2 rounded-full bg-fuchsia-400"></span>
+          <span>Hybrid MoE-Mamba</span>
+          <span class="hidden md:inline text-[10px] font-mono text-slate-400">(SSM + GQA + MoE)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3-Level Semantic Zoom (LOD) Switcher -->
+    <div class="flex items-center gap-1.5 pointer-events-auto hud-glass px-2.5 py-2 rounded-2xl">
+      <span class="text-[11px] text-slate-400 px-1.5 hidden xl:inline font-medium">语义层级 (LOD):</span>
+      <button data-lod="1" class="lod-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 text-slate-300 hover:bg-slate-800/70 border border-transparent">
+        <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span>L1: 宏观模型塔</span>
+      </button>
+      <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-600"></i>
+      <button data-lod="2" class="lod-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 text-slate-300 hover:bg-slate-800/70 border border-transparent">
+        <i data-lucide="git-branch" class="w-3.5 h-3.5 text-cyan-400"></i>
+        <span>L2: 单层拓扑拆解</span>
+      </button>
+      <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-600"></i>
+      <button data-lod="3" class="lod-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-400/50 shadow-sm shadow-fuchsia-500/20">
+        <i data-lucide="cpu" class="w-3.5 h-3.5 text-fuchsia-400"></i>
+        <span>L3: 算子微观内部</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== LEFT FLOATING HUD: SIMULATION & HYPERPARAMETERS ==================== -->
+  <aside id="left-panel" class="absolute top-20 left-3 z-20 w-80 max-h-[calc(100vh-140px)] flex flex-col rounded-2xl hud-glass overflow-hidden transition-transform duration-300">
+    <!-- Panel Header -->
+    <div class="px-4 py-3 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/40">
+      <div class="flex items-center gap-2">
+        <i data-lucide="sliders" class="w-4 h-4 text-cyan-400"></i>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">前向传播与实时显存推演</h2>
+      </div>
+      <button id="toggle-left-btn" aria-label="折叠或展开参数面板" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/60" title="折叠/展开面板">
+        <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <div id="left-panel-body" class="p-4 space-y-4 overflow-y-auto text-xs">
+      <!-- Active Layer Selector & Quick Action -->
+      <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800/90 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400 font-medium">当前检视层 (Active Layer)</span>
+          <span id="active-layer-badge" class="font-mono text-[11px] px-2 py-0.5 rounded-md bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30">Layer #4 (MoE)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input id="layer-slider" aria-label="当前检视层" type="range" min="0" max="60" value="4" class="w-full" />
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span id="layer-range-min">Layer 0 (Dense)</span>
+          <span id="layer-range-max">Layer 60 (MoE)</span>
+        </div>
+      </div>
+
+      <!-- MoE Routing & Particle Simulation Controls -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-medium flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-fuchsia-400 pulse-indicator"></span>
+            动态张量流与专家路由
+          </span>
+          <button id="toggle-flow-btn" class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[11px] hover:bg-cyan-500/30 transition">
+            粒子流: 运行中
+          </button>
+        </div>
+
+        <button id="reroute-moe-btn" class="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-fuchsia-600/80 via-purple-600/80 to-indigo-600/80 hover:from-fuchsia-500 hover:to-indigo-500 text-white font-medium shadow-lg shadow-fuchsia-600/20 border border-fuchsia-400/40 flex items-center justify-center gap-2 transition active:scale-[0.98]">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>触发 Token 随机重路由 (Top-K MoE)</span>
+        </button>
+
+        <div id="active-experts-box" class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 font-mono text-[11px]">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span>激活路由专家 (Top-<span id="topk-count-label">8</span> / <span id="total-experts-label">256</span>):</span>
+            <span class="text-emerald-400">+1 共享专家常亮</span>
+          </div>
+          <div id="active-experts-list" class="flex flex-wrap gap-1 mt-1"></div>
+        </div>
+      </div>
+
+      <!-- Live Hyperparameter Sliders -->
+      <div class="space-y-3 pt-2 border-t border-slate-800/80">
+        <div class="text-slate-300 font-semibold flex items-center justify-between">
+          <span>推理超参数 (实时缩放 3D 张量)</span>
+          <span class="text-[10px] font-mono text-cyan-400">[B, S, H]</span>
+        </div>
+
+        <!-- Batch Size -->
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <label class="text-slate-400">Batch Size (<span class="font-mono text-white">B</span>)</label>
+            <span id="batch-val" class="font-mono text-cyan-300 font-semibold">4</span>
+          </div>
+          <input id="batch-slider" aria-label="批量大小 B" type="range" min="1" max="64" step="1" value="4" class="w-full" />
+        </div>
+
+        <!-- Sequence Length -->
+        <div class="space-y-1">
+          <div class="flex justify-between">
+            <label class="text-slate-400">Seq Length (<span class="font-mono text-white">S</span>)</label>
+            <span id="seq-val" class="font-mono text-cyan-300 font-semibold">4096</span>
+          </div>
+          <input id="seq-slider" aria-label="序列长度 S" type="range" min="512" max="32768" step="512" value="4096" class="w-full" />
+        </div>
+
+        <!-- Precision Selector -->
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center">
+            <label class="text-slate-400">权重/缓存精度 (Precision)</label>
+            <span id="precision-bytes-label" class="font-mono text-[10px] text-slate-400">1 Byte / Elem</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5" id="precision-buttons">
+            <button data-prec="bf16" class="prec-btn py-1.5 rounded-lg font-mono text-xs border border-slate-700/80 text-slate-300 hover:bg-slate-800/60 transition">BF16</button>
+            <button data-prec="fp8" class="prec-btn py-1.5 rounded-lg font-mono text-xs border border-cyan-400/50 bg-cyan-500/20 text-cyan-200 font-semibold transition">FP8</button>
+            <button data-prec="int4" class="prec-btn py-1.5 rounded-lg font-mono text-xs border border-slate-700/80 text-slate-300 hover:bg-slate-800/60 transition">INT4</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KV Cache Memory Comparison Visual Bar -->
+      <div class="p-3 rounded-xl bg-slate-950/90 border border-slate-800/90 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-slate-200 flex items-center gap-1.5">
+            <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-cyan-400"></i>
+            KV Cache 显存占用对比
+          </span>
+          <span id="kv-saving-badge" class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono text-[10px] font-semibold">
+            节省 93.3%
+          </span>
+        </div>
+
+        <!-- Current Architecture KV Bar -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px]">
+            <span id="kv-arch-name" class="text-cyan-300 font-medium">MLA 压缩潜在缓存</span>
+            <span id="kv-current-gb" class="font-mono text-white font-semibold">0.55 GiB</span>
+          </div>
+          <div class="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
+            <div id="kv-current-bar" class="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 rounded-full transition-all duration-300" style="width: 12%"></div>
+          </div>
+        </div>
+
+        <!-- Standard MHA Baseline Bar -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px]">
+            <span class="text-slate-400">标准 MHA 基线 (无压缩)</span>
+            <span id="kv-baseline-gb" class="font-mono text-slate-400">8.26 GiB</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full bg-rose-500/70 rounded-full w-full"></div>
+          </div>
+        </div>
+
+        <!-- Total Parameters Summary -->
+        <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px]">
+          <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60">
+            <div class="text-slate-400">总参数量估算 (Total)</div>
+            <div id="total-params-val" class="font-mono text-sm font-bold text-white mt-0.5">671.0 B</div>
+          </div>
+          <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60">
+            <div class="text-slate-400">单 Token 激活参数估算</div>
+            <div id="active-params-val" class="font-mono text-sm font-bold text-fuchsia-300 mt-0.5">37.2 B</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Color Legend -->
+      <div class="grid grid-cols-2 gap-1.5 pt-1 text-[11px] text-slate-300">
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cyan-400 shadow-sm shadow-cyan-400"></span>Attention / MLA</div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-fuchsia-500 shadow-sm shadow-fuchsia-500"></span>MoE / SwiGLU FFN</div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-400 shadow-sm shadow-emerald-400"></span>RMSNorm / 共享专家</div>
+        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-400 shadow-sm shadow-amber-400"></span>残差连接 / RoPE / MTP</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== RIGHT FLOATING HUD: COMPONENT INSPECTOR & CONFIG.JSON ==================== -->
+  <aside id="right-panel" class="absolute top-20 right-3 z-20 w-96 max-w-[calc(100vw-24px)] max-h-[calc(100vh-140px)] flex flex-col rounded-2xl hud-glass overflow-hidden transition-transform duration-300">
+    <!-- Tabs Header -->
+    <div class="px-3 pt-2.5 pb-2 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/40">
+      <div class="flex items-center gap-1">
+        <button id="tab-inspector-btn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 flex items-center gap-1.5 transition">
+          <i data-lucide="microscope" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span>算子检视器 (Inspector)</span>
+        </button>
+        <button id="tab-config-btn" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/60 border border-transparent flex items-center gap-1.5 transition">
+          <i data-lucide="file-json" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>config.json 实时编辑</span>
+        </button>
+      </div>
+      <button id="toggle-right-btn" aria-label="折叠或展开检查器" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/60" title="折叠/展开面板">
+        <i data-lucide="panel-right-close" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- TAB 1: COMPONENT INSPECTOR -->
+    <div id="tab-inspector-content" class="p-4 space-y-4 overflow-y-auto text-xs">
+      <!-- Selected Component Header -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between gap-2">
+          <span id="insp-category" class="px-2 py-0.5 rounded-md text-[10px] font-mono uppercase font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+            Attention / KV Compression
+          </span>
+          <span id="insp-lod-hint" class="text-[11px] text-slate-400 font-mono">点击 3D 模块切换</span>
+        </div>
+        <h3 id="insp-title" class="text-base font-bold text-white tracking-tight">MLA 潜在 KV 压缩缓存 (Latent c_t^KV)</h3>
+        <p id="insp-desc" class="text-slate-300 leading-relaxed text-xs">
+          DeepSeek-V3/R1 核心创新：将高维输入隐状态通过下投影矩阵 W^DKV 压缩为低秩潜在向量 c_t^KV (dim=512)，推理时仅缓存该压缩向量，从而将 KV Cache 显存降低 90% 以上。
+        </p>
+      </div>
+
+      <!-- Dynamic Tensor Shapes (Input -> Output) -->
+      <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-2">
+        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+          <span>实时张量维度变换 (Tensor Shapes)</span>
+          <span class="text-cyan-400 font-mono text-[10px]">随滑块实时更新</span>
+        </div>
+        <div class="flex items-center justify-between gap-2 font-mono text-xs pt-1">
+          <div class="flex-1 p-2 rounded-lg bg-slate-900 border border-slate-800 text-center">
+            <div class="text-[10px] text-slate-400 mb-0.5">输入张量 (Input)</div>
+            <div id="insp-input-shape" class="text-emerald-300 font-semibold">[4, 4096, 7168]</div>
+          </div>
+          <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500 shrink-0"></i>
+          <div class="flex-1 p-2 rounded-lg bg-slate-900 border border-cyan-500/30 text-center">
+            <div class="text-[10px] text-slate-400 mb-0.5">输出张量 (Output)</div>
+            <div id="insp-output-shape" class="text-cyan-300 font-semibold">[4, 4096, 512]</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parameter Count & FLOPs -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">该模块参数量 (Params)</div>
+          <div id="insp-params" class="font-mono text-sm font-bold text-white mt-0.5">3.67 M</div>
+          <div id="insp-params-formula" class="font-mono text-[10px] text-slate-400 mt-0.5">H × d_c = 7168 × 512</div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-900/70 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">单次前向计算量 (FLOPs)</div>
+          <div id="insp-flops" class="font-mono text-sm font-bold text-amber-300 mt-0.5">120.2 GFLOPs</div>
+          <div id="insp-flops-formula" class="font-mono text-[10px] text-slate-400 mt-0.5">2 · B · S · H · d_c</div>
+        </div>
+      </div>
+
+      <!-- Mathematical Formulation -->
+      <div class="space-y-1.5">
+        <div class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+          <i data-lucide="sigma" class="w-3.5 h-3.5 text-cyan-400"></i>
+          <span>核心数学公式 (Mathematical Formulation)</span>
+        </div>
+        <div id="insp-math" class="math-box p-3 rounded-xl text-xs text-cyan-100 space-y-1.5 leading-relaxed overflow-x-auto">
+          <div>c<sub>t</sub><sup>KV</sup> = W<sup>DKV</sup> h<sub>t</sub> ∈ ℝ<sup>d<sub>c</sub></sup> &nbsp;(d<sub>c</sub> = 512)</div>
+          <div>[k<sub>t</sub><sup>C</sup>; v<sub>t</sub><sup>C</sup>] = W<sup>UK,UV</sup> c<sub>t</sub><sup>KV</sup></div>
+          <div>k<sub>t</sub><sup>R</sup> = RoPE(W<sup>KR</sup> h<sub>t</sub>), &nbsp; k<sub>t</sub> = [k<sub>t</sub><sup>C</sup>; k<sub>t</sub><sup>R</sup>]</div>
+        </div>
+      </div>
+
+      <!-- PyTorch / Kernel Code Snippet -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="code-2" class="w-3.5 h-3.5 text-fuchsia-400"></i>
+            <span>PyTorch 风格实现示意</span>
+          </span>
+          <button id="copy-code-btn" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono flex items-center gap-1 transition">
+            <i data-lucide="copy" class="w-3 h-3"></i>
+            <span id="copy-code-text">复制代码</span>
+          </button>
+        </div>
+        <pre id="insp-code" class="p-3 rounded-xl bg-slate-950 border border-slate-800/90 font-mono text-[11px] text-slate-200 overflow-x-auto leading-relaxed"></pre>
+      </div>
+    </div>
+
+    <!-- TAB 2: LIVE CONFIG.JSON EDITOR -->
+    <div id="tab-config-content" class="hidden p-4 space-y-3.5 overflow-y-auto text-xs">
+      <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[11px] leading-relaxed">
+        修改下方 <code class="font-mono text-white">config.json</code> 超参数，3D 场景中的算子体积、MoE 专家矩阵规模及显存占用将<strong>实时重绘</strong>。
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1 font-mono">hidden_size (H)</label>
+          <input id="cfg-hidden-size" aria-label="隐藏维度 hidden_size" type="number" step="512" min="1024" max="16384" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-white focus:border-cyan-400 outline-none" />
+        </div>
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1 font-mono">num_hidden_layers</label>
+          <input id="cfg-num-layers" aria-label="模型层数 num_layers" type="number" step="1" min="4" max="128" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-white focus:border-cyan-400 outline-none" />
+        </div>
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1 font-mono">num_attention_heads</label>
+          <input id="cfg-num-heads" aria-label="注意力头数" type="number" step="4" min="8" max="256" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-white focus:border-cyan-400 outline-none" />
+        </div>
+        <div>
+          <label id="cfg-kv-label" class="block text-[11px] text-cyan-300 mb-1 font-mono">kv_lora_rank (d_c)</label>
+          <input id="cfg-kv-param" aria-label="KV 压缩维度" type="number" step="64" min="64" max="4096" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-cyan-500/50 font-mono text-cyan-200 focus:border-cyan-400 outline-none" />
+        </div>
+        <div>
+          <label class="block text-[11px] text-fuchsia-300 mb-1 font-mono">n_routed_experts</label>
+          <input id="cfg-routed-experts" aria-label="路由专家数量" type="number" step="16" min="0" max="512" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-fuchsia-500/50 font-mono text-fuchsia-200 focus:border-fuchsia-400 outline-none" />
+        </div>
+        <div>
+          <label class="block text-[11px] text-fuchsia-300 mb-1 font-mono">num_experts_per_tok</label>
+          <input id="cfg-topk" aria-label="每 Token 激活专家数" type="number" step="1" min="1" max="32" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-fuchsia-500/50 font-mono text-fuchsia-200 focus:border-fuchsia-400 outline-none" />
+        </div>
+      </div>
+
+      <button id="apply-config-btn" class="w-full py-2 rounded-xl bg-cyan-500/25 hover:bg-cyan-500/35 text-cyan-200 border border-cyan-400/50 font-semibold transition flex items-center justify-center gap-1.5">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+        <span>应用超参数并重构 3D 架构图</span>
+      </button>
+
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span class="font-mono">HuggingFace config.json 预览</span>
+          <span class="text-emerald-400 font-mono text-[10px]">实时同步</span>
+        </div>
+        <pre id="config-json-preview" class="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-emerald-300 overflow-x-auto max-h-60 leading-relaxed"></pre>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== BOTTOM CAMERA & VIEWPORT TOOLBAR ==================== -->
+  <footer class="llm-camera-tools absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-2 rounded-2xl hud-glass pointer-events-auto">
+    <!-- L3 Sub-focus shortcuts (visible especially in L3) -->
+    <div id="l3-subfocus-group" class="flex items-center gap-1 pr-2 border-r border-slate-700/80">
+      <button data-focus="all" class="cam-focus-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-white hover:bg-slate-700 transition">
+        全景视图
+      </button>
+      <button data-focus="attn" class="cam-focus-btn px-2.5 py-1 rounded-lg text-xs font-medium text-cyan-300 hover:bg-cyan-500/20 transition flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>聚焦 Attention/MLA
+      </button>
+      <button data-focus="ffn" class="cam-focus-btn px-2.5 py-1 rounded-lg text-xs font-medium text-fuchsia-300 hover:bg-fuchsia-500/20 transition flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-fuchsia-400"></span>聚焦 MoE/FFN
+      </button>
+    </div>
+
+    <!-- Camera Presets -->
+    <button id="cam-reset-btn" aria-label="重置 LLM 镜头" class="px-2.5 py-1 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1" title="重置镜头">
+      <i data-lucide="locate-fixed" class="w-3.5 h-3.5 text-cyan-400"></i>
+      <span class="hidden sm:inline">重置视角</span>
+    </button>
+    <button id="cam-top-btn" aria-label="俯视 LLM 拓扑" class="px-2.5 py-1 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1" title="俯视拓扑图">
+      <i data-lucide="compass" class="w-3.5 h-3.5 text-emerald-400"></i>
+      <span class="hidden sm:inline">俯视</span>
+    </button>
+    <button id="cam-side-btn" aria-label="正视 LLM 拓扑" class="px-2.5 py-1 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1" title="正侧视图">
+      <i data-lucide="scan-line" class="w-3.5 h-3.5 text-amber-400"></i>
+      <span class="hidden sm:inline">侧视</span>
+    </button>
+
+    <div class="h-4 w-px bg-slate-700/80 mx-0.5"></div>
+
+    <button id="toggle-rotate-btn" aria-label="开启或关闭自动环绕" class="px-2.5 py-1 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/70 transition flex items-center gap-1">
+      <i data-lucide="rotate-3d" class="w-3.5 h-3.5 text-fuchsia-400"></i>
+      <span class="hidden md:inline">自动环绕</span>
+    </button>
+    <button id="toggle-residual-btn" aria-label="显示或隐藏残差弧线" class="px-2.5 py-1 rounded-lg text-xs bg-amber-500/20 text-amber-200 border border-amber-500/40 transition flex items-center gap-1">
+      <i data-lucide="git-commit-horizontal" class="w-3.5 h-3.5 text-amber-400"></i>
+      <span class="hidden md:inline">残差弧线</span>
+    </button>
+    <button id="toggle-labels-btn" aria-label="显示或隐藏 LLM 标签" class="px-2.5 py-1 rounded-lg text-xs bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 transition flex items-center gap-1">
+      <i data-lucide="tag" class="w-3.5 h-3.5 text-cyan-400"></i>
+      <span class="hidden md:inline">3D 标签</span>
+    </button>
+  </footer>
+

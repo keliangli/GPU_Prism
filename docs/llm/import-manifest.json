@@ -1,0 +1,10 @@
+{
+  "sourceFile": "llm_arch_3d_explorer.html",
+  "sha256": "b4419a3bf0d82a0ca113933ff6deb4c50943b0b4c68660d78ed1f4d49a94c0bd",
+  "presets": [
+    "deepseek",
+    "qwen",
+    "hybrid"
+  ],
+  "semanticLevels": 3
+}

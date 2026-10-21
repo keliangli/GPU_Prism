@@ -1,0 +1,1394 @@
+.llm-explorer *, .llm-explorer ::before, .llm-explorer ::after {
+  --tw-border-spacing-x: 0;
+  --tw-border-spacing-y: 0;
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-rotate: 0;
+  --tw-skew-x: 0;
+  --tw-skew-y: 0;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-pan-x:  ;
+  --tw-pan-y:  ;
+  --tw-pinch-zoom:  ;
+  --tw-scroll-snap-strictness: proximity;
+  --tw-gradient-from-position:  ;
+  --tw-gradient-via-position:  ;
+  --tw-gradient-to-position:  ;
+  --tw-ordinal:  ;
+  --tw-slashed-zero:  ;
+  --tw-numeric-figure:  ;
+  --tw-numeric-spacing:  ;
+  --tw-numeric-fraction:  ;
+  --tw-ring-inset:  ;
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-color: rgb(59 130 246 / 0.5);
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+  --tw-blur:  ;
+  --tw-brightness:  ;
+  --tw-contrast:  ;
+  --tw-grayscale:  ;
+  --tw-hue-rotate:  ;
+  --tw-invert:  ;
+  --tw-saturate:  ;
+  --tw-sepia:  ;
+  --tw-drop-shadow:  ;
+  --tw-backdrop-blur:  ;
+  --tw-backdrop-brightness:  ;
+  --tw-backdrop-contrast:  ;
+  --tw-backdrop-grayscale:  ;
+  --tw-backdrop-hue-rotate:  ;
+  --tw-backdrop-invert:  ;
+  --tw-backdrop-opacity:  ;
+  --tw-backdrop-saturate:  ;
+  --tw-backdrop-sepia:  ;
+  --tw-contain-size:  ;
+  --tw-contain-layout:  ;
+  --tw-contain-paint:  ;
+  --tw-contain-style:  ;
+}
+
+.llm-explorer ::backdrop {
+  --tw-border-spacing-x: 0;
+  --tw-border-spacing-y: 0;
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-rotate: 0;
+  --tw-skew-x: 0;
+  --tw-skew-y: 0;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+  --tw-pan-x:  ;
+  --tw-pan-y:  ;
+  --tw-pinch-zoom:  ;
+  --tw-scroll-snap-strictness: proximity;
+  --tw-gradient-from-position:  ;
+  --tw-gradient-via-position:  ;
+  --tw-gradient-to-position:  ;
+  --tw-ordinal:  ;
+  --tw-slashed-zero:  ;
+  --tw-numeric-figure:  ;
+  --tw-numeric-spacing:  ;
+  --tw-numeric-fraction:  ;
+  --tw-ring-inset:  ;
+  --tw-ring-offset-width: 0px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-color: rgb(59 130 246 / 0.5);
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-shadow: 0 0 #0000;
+  --tw-shadow-colored: 0 0 #0000;
+  --tw-blur:  ;
+  --tw-brightness:  ;
+  --tw-contrast:  ;
+  --tw-grayscale:  ;
+  --tw-hue-rotate:  ;
+  --tw-invert:  ;
+  --tw-saturate:  ;
+  --tw-sepia:  ;
+  --tw-drop-shadow:  ;
+  --tw-backdrop-blur:  ;
+  --tw-backdrop-brightness:  ;
+  --tw-backdrop-contrast:  ;
+  --tw-backdrop-grayscale:  ;
+  --tw-backdrop-hue-rotate:  ;
+  --tw-backdrop-invert:  ;
+  --tw-backdrop-opacity:  ;
+  --tw-backdrop-saturate:  ;
+  --tw-backdrop-sepia:  ;
+  --tw-contain-size:  ;
+  --tw-contain-layout:  ;
+  --tw-contain-paint:  ;
+  --tw-contain-style:  ;
+}/*
+! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com
+*//*
+1. Prevent padding and border from affecting element width. (https://github.com/mozdevs/cssremedy/issues/4)
+2. Allow adding a border to an element by just adding a border-width. (https://github.com/tailwindcss/tailwindcss/pull/116)
+*/
+
+.llm-explorer *, .llm-explorer ::before, .llm-explorer ::after {
+  box-sizing: border-box; /* 1 */
+  border-width: 0; /* 2 */
+  border-style: solid; /* 2 */
+  border-color: #e5e7eb; /* 2 */
+}
+
+.llm-explorer ::before, .llm-explorer ::after {
+  --tw-content: '';
+}
+
+/*
+1. Use a consistent sensible line-height in all browsers.
+2. Prevent adjustments of font size after orientation changes in iOS.
+3. Use a more readable tab size.
+4. Use the user's configured `sans` font-family by default.
+5. Use the user's configured `sans` font-feature-settings by default.
+6. Use the user's configured `sans` font-variation-settings by default.
+7. Disable tap highlights on iOS
+*/
+
+.llm-explorer, .llm-explorer {
+  line-height: 1.5; /* 1 */
+  -webkit-text-size-adjust: 100%; /* 2 */
+  -moz-tab-size: 4; /* 3 */
+  tab-size: 4; /* 3 */
+  font-family: Inter, system-ui, sans-serif; /* 4 */
+  font-feature-settings: normal; /* 5 */
+  font-variation-settings: normal; /* 6 */
+  -webkit-tap-highlight-color: transparent; /* 7 */
+}
+
+/*
+1. Remove the margin in all browsers.
+2. Inherit line-height from `html` so users can set them as a class directly on the `html` element.
+*/
+
+.llm-explorer {
+  margin: 0; /* 1 */
+  line-height: inherit; /* 2 */
+}
+
+/*
+1. Add the correct height in Firefox.
+2. Correct the inheritance of border color in Firefox. (https://bugzilla.mozilla.org/show_bug.cgi?id=190655)
+3. Ensure horizontal rules are visible by default.
+*/
+
+.llm-explorer hr {
+  height: 0; /* 1 */
+  color: inherit; /* 2 */
+  border-top-width: 1px; /* 3 */
+}
+
+/*
+Add the correct text decoration in Chrome, Edge, and Safari.
+*/
+
+.llm-explorer abbr:where([title]) {
+  text-decoration: underline dotted;
+}
+
+/*
+Remove the default font size and weight for headings.
+*/
+
+.llm-explorer h1, .llm-explorer h2, .llm-explorer h3, .llm-explorer h4, .llm-explorer h5, .llm-explorer h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/*
+Reset links to optimize for opt-in styling instead of opt-out.
+*/
+
+.llm-explorer a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+/*
+Add the correct font weight in Edge and Safari.
+*/
+
+.llm-explorer b, .llm-explorer strong {
+  font-weight: bolder;
+}
+
+/*
+1. Use the user's configured `mono` font-family by default.
+2. Use the user's configured `mono` font-feature-settings by default.
+3. Use the user's configured `mono` font-variation-settings by default.
+4. Correct the odd `em` font sizing in all browsers.
+*/
+
+.llm-explorer code, .llm-explorer kbd, .llm-explorer samp, .llm-explorer pre {
+  font-family: JetBrains Mono, monospace; /* 1 */
+  font-feature-settings: normal; /* 2 */
+  font-variation-settings: normal; /* 3 */
+  font-size: 1em; /* 4 */
+}
+
+/*
+Add the correct font size in all browsers.
+*/
+
+.llm-explorer small {
+  font-size: 80%;
+}
+
+/*
+Prevent `sub` and `sup` elements from affecting the line height in all browsers.
+*/
+
+.llm-explorer sub, .llm-explorer sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.llm-explorer sub {
+  bottom: -0.25em;
+}
+
+.llm-explorer sup {
+  top: -0.5em;
+}
+
+/*
+1. Remove text indentation from table contents in Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=999088, https://bugs.webkit.org/show_bug.cgi?id=201297)
+2. Correct table border color inheritance in all Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=935729, https://bugs.webkit.org/show_bug.cgi?id=195016)
+3. Remove gaps between table borders by default.
+*/
+
+.llm-explorer table {
+  text-indent: 0; /* 1 */
+  border-color: inherit; /* 2 */
+  border-collapse: collapse; /* 3 */
+}
+
+/*
+1. Change the font styles in all browsers.
+2. Remove the margin in Firefox and Safari.
+3. Remove default padding in all browsers.
+*/
+
+.llm-explorer button, .llm-explorer input, .llm-explorer optgroup, .llm-explorer select, .llm-explorer textarea {
+  font-family: inherit; /* 1 */
+  font-feature-settings: inherit; /* 1 */
+  font-variation-settings: inherit; /* 1 */
+  font-size: 100%; /* 1 */
+  font-weight: inherit; /* 1 */
+  line-height: inherit; /* 1 */
+  letter-spacing: inherit; /* 1 */
+  color: inherit; /* 1 */
+  margin: 0; /* 2 */
+  padding: 0; /* 3 */
+}
+
+/*
+Remove the inheritance of text transform in Edge and Firefox.
+*/
+
+.llm-explorer button, .llm-explorer select {
+  text-transform: none;
+}
+
+/*
+1. Correct the inability to style clickable types in iOS and Safari.
+2. Remove default button styles.
+*/
+
+.llm-explorer button, .llm-explorer input:where([type='button']), .llm-explorer input:where([type='reset']), .llm-explorer input:where([type='submit']) {
+  -webkit-appearance: button; /* 1 */
+  background-color: transparent; /* 2 */
+  background-image: none; /* 2 */
+}
+
+/*
+Use the modern Firefox focus style for all focusable elements.
+*/
+
+.llm-explorer :-moz-focusring {
+  outline: auto;
+}
+
+/*
+Remove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/gecko-dev/blob/2f9eacd9d3d995c937b4251a5557d95d494c9be1/layout/style/res/forms.css#L728-L737)
+*/
+
+.llm-explorer :-moz-ui-invalid {
+  box-shadow: none;
+}
+
+/*
+Add the correct vertical alignment in Chrome and Firefox.
+*/
+
+.llm-explorer progress {
+  vertical-align: baseline;
+}
+
+/*
+Correct the cursor style of increment and decrement buttons in Safari.
+*/
+
+.llm-explorer ::-webkit-inner-spin-button, .llm-explorer ::-webkit-outer-spin-button {
+  height: auto;
+}
+
+/*
+1. Correct the odd appearance in Chrome and Safari.
+2. Correct the outline style in Safari.
+*/
+
+.llm-explorer [type='search'] {
+  -webkit-appearance: textfield; /* 1 */
+  outline-offset: -2px; /* 2 */
+}
+
+/*
+Remove the inner padding in Chrome and Safari on macOS.
+*/
+
+.llm-explorer ::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/*
+1. Correct the inability to style clickable types in iOS and Safari.
+2. Change font properties to `inherit` in Safari.
+*/
+
+.llm-explorer ::-webkit-file-upload-button {
+  -webkit-appearance: button; /* 1 */
+  font: inherit; /* 2 */
+}
+
+/*
+Add the correct display in Chrome and Safari.
+*/
+
+.llm-explorer summary {
+  display: list-item;
+}
+
+/*
+Removes the default spacing and border for appropriate elements.
+*/
+
+.llm-explorer blockquote, .llm-explorer dl, .llm-explorer dd, .llm-explorer h1, .llm-explorer h2, .llm-explorer h3, .llm-explorer h4, .llm-explorer h5, .llm-explorer h6, .llm-explorer hr, .llm-explorer figure, .llm-explorer p, .llm-explorer pre {
+  margin: 0;
+}
+
+.llm-explorer fieldset {
+  margin: 0;
+  padding: 0;
+}
+
+.llm-explorer legend {
+  padding: 0;
+}
+
+.llm-explorer ol, .llm-explorer ul, .llm-explorer menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+Reset default styling for dialogs.
+*/
+.llm-explorer dialog {
+  padding: 0;
+}
+
+/*
+Prevent resizing textareas horizontally by default.
+*/
+
+.llm-explorer textarea {
+  resize: vertical;
+}
+
+/*
+1. Reset the default placeholder opacity in Firefox. (https://github.com/tailwindlabs/tailwindcss/issues/3300)
+2. Set the default placeholder color to the user's configured gray 400 color.
+*/
+
+.llm-explorer input::placeholder, .llm-explorer textarea::placeholder {
+  opacity: 1; /* 1 */
+  color: #9ca3af; /* 2 */
+}
+
+/*
+Set the default cursor for buttons.
+*/
+
+.llm-explorer button, .llm-explorer [role="button"] {
+  cursor: pointer;
+}
+
+/*
+Make sure disabled buttons don't get the pointer cursor.
+*/
+.llm-explorer :disabled {
+  cursor: default;
+}
+
+/*
+1. Make replaced elements `display: block` by default. (https://github.com/mozdevs/cssremedy/issues/14)
+2. Add `vertical-align: middle` to align replaced elements more sensibly by default. (https://github.com/jensimmons/cssremedy/issues/14#issuecomment-634934210)
+   This can trigger a poorly considered lint error in some tools but is included by design.
+*/
+
+.llm-explorer img, .llm-explorer svg, .llm-explorer video, .llm-explorer canvas, .llm-explorer audio, .llm-explorer iframe, .llm-explorer embed, .llm-explorer object {
+  display: block; /* 1 */
+  vertical-align: middle; /* 2 */
+}
+
+/*
+Constrain images and videos to the parent width and preserve their intrinsic aspect ratio. (https://github.com/mozdevs/cssremedy/issues/14)
+*/
+
+.llm-explorer img, .llm-explorer video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Make elements with the HTML hidden attribute stay hidden by default */
+.llm-explorer [hidden]:where(:not([hidden="until-found"])) {
+  display: none;
+}
+.llm-explorer .container {
+  width: 100%;
+}
+@media (min-width: 640px) {
+
+  .llm-explorer .container {
+    max-width: 640px;
+  }
+}
+@media (min-width: 768px) {
+
+  .llm-explorer .container {
+    max-width: 768px;
+  }
+}
+@media (min-width: 1024px) {
+
+  .llm-explorer .container {
+    max-width: 1024px;
+  }
+}
+@media (min-width: 1280px) {
+
+  .llm-explorer .container {
+    max-width: 1280px;
+  }
+}
+@media (min-width: 1536px) {
+
+  .llm-explorer .container {
+    max-width: 1536px;
+  }
+}
+.llm-explorer .pointer-events-none {
+  pointer-events: none;
+}
+.llm-explorer .pointer-events-auto {
+  pointer-events: auto;
+}
+.llm-explorer .visible {
+  visibility: visible;
+}
+.llm-explorer .absolute {
+  position: absolute;
+}
+.llm-explorer .inset-0 {
+  inset: 0px;
+}
+.llm-explorer .bottom-3 {
+  bottom: 0.75rem;
+}
+.llm-explorer .left-1\/2 {
+  left: 50%;
+}
+.llm-explorer .left-3 {
+  left: 0.75rem;
+}
+.llm-explorer .right-3 {
+  right: 0.75rem;
+}
+.llm-explorer .top-20 {
+  top: 5rem;
+}
+.llm-explorer .top-3 {
+  top: 0.75rem;
+}
+.llm-explorer .z-10 {
+  z-index: 10;
+}
+.llm-explorer .z-20 {
+  z-index: 20;
+}
+.llm-explorer .z-30 {
+  z-index: 30;
+}
+.llm-explorer .z-50 {
+  z-index: 50;
+}
+.llm-explorer .mx-0\.5 {
+  margin-left: 0.125rem;
+  margin-right: 0.125rem;
+}
+.llm-explorer .mb-0\.5 {
+  margin-bottom: 0.125rem;
+}
+.llm-explorer .mb-1 {
+  margin-bottom: 0.25rem;
+}
+.llm-explorer .mt-0\.5 {
+  margin-top: 0.125rem;
+}
+.llm-explorer .mt-1 {
+  margin-top: 0.25rem;
+}
+.llm-explorer .block {
+  display: block;
+}
+.llm-explorer .inline-block {
+  display: inline-block;
+}
+.llm-explorer .flex {
+  display: flex;
+}
+.llm-explorer .grid {
+  display: grid;
+}
+.llm-explorer .hidden {
+  display: none;
+}
+.llm-explorer .h-1\.5 {
+  height: 0.375rem;
+}
+.llm-explorer .h-2 {
+  height: 0.5rem;
+}
+.llm-explorer .h-2\.5 {
+  height: 0.625rem;
+}
+.llm-explorer .h-3 {
+  height: 0.75rem;
+}
+.llm-explorer .h-3\.5 {
+  height: 0.875rem;
+}
+.llm-explorer .h-4 {
+  height: 1rem;
+}
+.llm-explorer .h-8 {
+  height: 2rem;
+}
+.llm-explorer .h-full {
+  height: 100%;
+}
+.llm-explorer .max-h-60 {
+  max-height: 15rem;
+}
+.llm-explorer .max-h-\[calc\(100vh-140px\)\] {
+  max-height: calc(100vh - 140px);
+}
+.llm-explorer .w-1\.5 {
+  width: 0.375rem;
+}
+.llm-explorer .w-2 {
+  width: 0.5rem;
+}
+.llm-explorer .w-2\.5 {
+  width: 0.625rem;
+}
+.llm-explorer .w-3 {
+  width: 0.75rem;
+}
+.llm-explorer .w-3\.5 {
+  width: 0.875rem;
+}
+.llm-explorer .w-4 {
+  width: 1rem;
+}
+.llm-explorer .w-8 {
+  width: 2rem;
+}
+.llm-explorer .w-80 {
+  width: 20rem;
+}
+.llm-explorer .w-96 {
+  width: 24rem;
+}
+.llm-explorer .w-full {
+  width: 100%;
+}
+.llm-explorer .w-px {
+  width: 1px;
+}
+.llm-explorer .max-w-\[calc\(100vw-24px\)\] {
+  max-width: calc(100vw - 24px);
+}
+.llm-explorer .flex-1 {
+  flex: 1 1 0%;
+}
+.llm-explorer .shrink-0 {
+  flex-shrink: 0;
+}
+.llm-explorer .-translate-x-1\/2 {
+  --tw-translate-x: -50%;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+.llm-explorer .resize {
+  resize: both;
+}
+.llm-explorer .grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.llm-explorer .grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.llm-explorer .flex-col {
+  flex-direction: column;
+}
+.llm-explorer .flex-wrap {
+  flex-wrap: wrap;
+}
+.llm-explorer .items-center {
+  align-items: center;
+}
+.llm-explorer .justify-center {
+  justify-content: center;
+}
+.llm-explorer .justify-between {
+  justify-content: space-between;
+}
+.llm-explorer .gap-1 {
+  gap: 0.25rem;
+}
+.llm-explorer .gap-1\.5 {
+  gap: 0.375rem;
+}
+.llm-explorer .gap-2 {
+  gap: 0.5rem;
+}
+.llm-explorer .gap-2\.5 {
+  gap: 0.625rem;
+}
+.llm-explorer .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.25rem * var(--tw-space-y-reverse));
+}
+.llm-explorer .space-y-1\.5 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.375rem * var(--tw-space-y-reverse));
+}
+.llm-explorer .space-y-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
+}
+.llm-explorer .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.625rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.625rem * var(--tw-space-y-reverse));
+}
+.llm-explorer .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.75rem * var(--tw-space-y-reverse));
+}
+.llm-explorer .space-y-3\.5 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.875rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.875rem * var(--tw-space-y-reverse));
+}
+.llm-explorer .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(1rem * var(--tw-space-y-reverse));
+}
+.llm-explorer .overflow-hidden {
+  overflow: hidden;
+}
+.llm-explorer .overflow-x-auto {
+  overflow-x: auto;
+}
+.llm-explorer .overflow-y-auto {
+  overflow-y: auto;
+}
+.llm-explorer .rounded {
+  border-radius: 0.25rem;
+}
+.llm-explorer .rounded-2xl {
+  border-radius: 1rem;
+}
+.llm-explorer .rounded-full {
+  border-radius: 9999px;
+}
+.llm-explorer .rounded-lg {
+  border-radius: 0.5rem;
+}
+.llm-explorer .rounded-md {
+  border-radius: 0.375rem;
+}
+.llm-explorer .rounded-sm {
+  border-radius: 0.125rem;
+}
+.llm-explorer .rounded-xl {
+  border-radius: 0.75rem;
+}
+.llm-explorer .border {
+  border-width: 1px;
+}
+.llm-explorer .border-b {
+  border-bottom-width: 1px;
+}
+.llm-explorer .border-r {
+  border-right-width: 1px;
+}
+.llm-explorer .border-t {
+  border-top-width: 1px;
+}
+.llm-explorer .border-amber-400\/40 {
+  border-color: rgb(251 191 36 / 0.4);
+}
+.llm-explorer .border-amber-500\/30 {
+  border-color: rgb(245 158 11 / 0.3);
+}
+.llm-explorer .border-amber-500\/40 {
+  border-color: rgb(245 158 11 / 0.4);
+}
+.llm-explorer .border-cyan-400\/30 {
+  border-color: rgb(34 211 238 / 0.3);
+}
+.llm-explorer .border-cyan-400\/40 {
+  border-color: rgb(34 211 238 / 0.4);
+}
+.llm-explorer .border-cyan-400\/50 {
+  border-color: rgb(34 211 238 / 0.5);
+}
+.llm-explorer .border-cyan-500\/30 {
+  border-color: rgb(6 182 212 / 0.3);
+}
+.llm-explorer .border-cyan-500\/40 {
+  border-color: rgb(6 182 212 / 0.4);
+}
+.llm-explorer .border-cyan-500\/50 {
+  border-color: rgb(6 182 212 / 0.5);
+}
+.llm-explorer .border-emerald-500\/30 {
+  border-color: rgb(16 185 129 / 0.3);
+}
+.llm-explorer .border-fuchsia-400\/40 {
+  border-color: rgb(232 121 249 / 0.4);
+}
+.llm-explorer .border-fuchsia-400\/50 {
+  border-color: rgb(232 121 249 / 0.5);
+}
+.llm-explorer .border-fuchsia-500\/30 {
+  border-color: rgb(217 70 239 / 0.3);
+}
+.llm-explorer .border-fuchsia-500\/50 {
+  border-color: rgb(217 70 239 / 0.5);
+}
+.llm-explorer .border-slate-600\/50 {
+  border-color: rgb(71 85 105 / 0.5);
+}
+.llm-explorer .border-slate-700 {
+  --tw-border-opacity: 1;
+  border-color: rgb(51 65 85 / var(--tw-border-opacity, 1));
+}
+.llm-explorer .border-slate-700\/70 {
+  border-color: rgb(51 65 85 / 0.7);
+}
+.llm-explorer .border-slate-700\/80 {
+  border-color: rgb(51 65 85 / 0.8);
+}
+.llm-explorer .border-slate-800 {
+  --tw-border-opacity: 1;
+  border-color: rgb(30 41 59 / var(--tw-border-opacity, 1));
+}
+.llm-explorer .border-slate-800\/60 {
+  border-color: rgb(30 41 59 / 0.6);
+}
+.llm-explorer .border-slate-800\/80 {
+  border-color: rgb(30 41 59 / 0.8);
+}
+.llm-explorer .border-slate-800\/90 {
+  border-color: rgb(30 41 59 / 0.9);
+}
+.llm-explorer .border-transparent {
+  border-color: transparent;
+}
+.llm-explorer .bg-amber-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(251 191 36 / var(--tw-bg-opacity, 1));
+}
+.llm-explorer .bg-amber-500\/10 {
+  background-color: rgb(245 158 11 / 0.1);
+}
+.llm-explorer .bg-amber-500\/20 {
+  background-color: rgb(245 158 11 / 0.2);
+}
+.llm-explorer .bg-cyan-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(34 211 238 / var(--tw-bg-opacity, 1));
+}
+.llm-explorer .bg-cyan-500\/20 {
+  background-color: rgb(6 182 212 / 0.2);
+}
+.llm-explorer .bg-cyan-500\/25 {
+  background-color: rgb(6 182 212 / 0.25);
+}
+.llm-explorer .bg-emerald-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(52 211 153 / var(--tw-bg-opacity, 1));
+}
+.llm-explorer .bg-emerald-500\/20 {
+  background-color: rgb(16 185 129 / 0.2);
+}
+.llm-explorer .bg-fuchsia-400 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(232 121 249 / var(--tw-bg-opacity, 1));
+}
+.llm-explorer .bg-fuchsia-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(217 70 239 / var(--tw-bg-opacity, 1));
+}
+.llm-explorer .bg-fuchsia-500\/20 {
+  background-color: rgb(217 70 239 / 0.2);
+}
+.llm-explorer .bg-fuchsia-500\/25 {
+  background-color: rgb(217 70 239 / 0.25);
+}
+.llm-explorer .bg-rose-500\/70 {
+  background-color: rgb(244 63 94 / 0.7);
+}
+.llm-explorer .bg-slate-700\/80 {
+  background-color: rgb(51 65 85 / 0.8);
+}
+.llm-explorer .bg-slate-800 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(30 41 59 / var(--tw-bg-opacity, 1));
+}
+.llm-explorer .bg-slate-900 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(15 23 42 / var(--tw-bg-opacity, 1));
+}
+.llm-explorer .bg-slate-900\/40 {
+  background-color: rgb(15 23 42 / 0.4);
+}
+.llm-explorer .bg-slate-900\/70 {
+  background-color: rgb(15 23 42 / 0.7);
+}
+.llm-explorer .bg-slate-900\/80 {
+  background-color: rgb(15 23 42 / 0.8);
+}
+.llm-explorer .bg-slate-950 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(2 6 23 / var(--tw-bg-opacity, 1));
+}
+.llm-explorer .bg-slate-950\/70 {
+  background-color: rgb(2 6 23 / 0.7);
+}
+.llm-explorer .bg-slate-950\/80 {
+  background-color: rgb(2 6 23 / 0.8);
+}
+.llm-explorer .bg-slate-950\/90 {
+  background-color: rgb(2 6 23 / 0.9);
+}
+.llm-explorer .bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+.llm-explorer .bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+.llm-explorer .from-cyan-400 {
+  --tw-gradient-from: #22d3ee var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(34 211 238 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.llm-explorer .from-cyan-500 {
+  --tw-gradient-from: #06b6d4 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(6 182 212 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.llm-explorer .from-fuchsia-600\/80 {
+  --tw-gradient-from: rgb(192 38 211 / 0.8) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(192 38 211 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.llm-explorer .via-blue-600 {
+  --tw-gradient-to: rgb(37 99 235 / 0)  var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), #2563eb var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+.llm-explorer .via-purple-600\/80 {
+  --tw-gradient-to: rgb(147 51 234 / 0)  var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), rgb(147 51 234 / 0.8) var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+.llm-explorer .to-emerald-400 {
+  --tw-gradient-to: #34d399 var(--tw-gradient-to-position);
+}
+.llm-explorer .to-fuchsia-600 {
+  --tw-gradient-to: #c026d3 var(--tw-gradient-to-position);
+}
+.llm-explorer .to-indigo-600\/80 {
+  --tw-gradient-to: rgb(79 70 229 / 0.8) var(--tw-gradient-to-position);
+}
+.llm-explorer .p-1 {
+  padding: 0.25rem;
+}
+.llm-explorer .p-2 {
+  padding: 0.5rem;
+}
+.llm-explorer .p-2\.5 {
+  padding: 0.625rem;
+}
+.llm-explorer .p-3 {
+  padding: 0.75rem;
+}
+.llm-explorer .p-4 {
+  padding: 1rem;
+}
+.llm-explorer .px-1\.5 {
+  padding-left: 0.375rem;
+  padding-right: 0.375rem;
+}
+.llm-explorer .px-2 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.llm-explorer .px-2\.5 {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+.llm-explorer .px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+.llm-explorer .px-3\.5 {
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+}
+.llm-explorer .px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.llm-explorer .py-0\.5 {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+.llm-explorer .py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+.llm-explorer .py-1\.5 {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+.llm-explorer .py-2 {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.llm-explorer .py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+.llm-explorer .pb-2 {
+  padding-bottom: 0.5rem;
+}
+.llm-explorer .pr-2 {
+  padding-right: 0.5rem;
+}
+.llm-explorer .pr-3 {
+  padding-right: 0.75rem;
+}
+.llm-explorer .pt-1 {
+  padding-top: 0.25rem;
+}
+.llm-explorer .pt-2 {
+  padding-top: 0.5rem;
+}
+.llm-explorer .pt-2\.5 {
+  padding-top: 0.625rem;
+}
+.llm-explorer .text-center {
+  text-align: center;
+}
+.llm-explorer .font-mono {
+  font-family: JetBrains Mono, monospace;
+}
+.llm-explorer .text-\[10px\] {
+  font-size: 10px;
+}
+.llm-explorer .text-\[11px\] {
+  font-size: 11px;
+}
+.llm-explorer .text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+.llm-explorer .text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.llm-explorer .text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+.llm-explorer .font-bold {
+  font-weight: 700;
+}
+.llm-explorer .font-medium {
+  font-weight: 500;
+}
+.llm-explorer .font-semibold {
+  font-weight: 600;
+}
+.llm-explorer .uppercase {
+  text-transform: uppercase;
+}
+.llm-explorer .leading-relaxed {
+  line-height: 1.625;
+}
+.llm-explorer .tracking-tight {
+  letter-spacing: -0.025em;
+}
+.llm-explorer .tracking-wider {
+  letter-spacing: 0.05em;
+}
+.llm-explorer .text-amber-200 {
+  --tw-text-opacity: 1;
+  color: rgb(253 230 138 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-amber-300 {
+  --tw-text-opacity: 1;
+  color: rgb(252 211 77 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-amber-400 {
+  --tw-text-opacity: 1;
+  color: rgb(251 191 36 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-cyan-100 {
+  --tw-text-opacity: 1;
+  color: rgb(207 250 254 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-cyan-200 {
+  --tw-text-opacity: 1;
+  color: rgb(165 243 252 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-cyan-300 {
+  --tw-text-opacity: 1;
+  color: rgb(103 232 249 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-cyan-300\/80 {
+  color: rgb(103 232 249 / 0.8);
+}
+.llm-explorer .text-cyan-400 {
+  --tw-text-opacity: 1;
+  color: rgb(34 211 238 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-emerald-300 {
+  --tw-text-opacity: 1;
+  color: rgb(110 231 183 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-emerald-400 {
+  --tw-text-opacity: 1;
+  color: rgb(52 211 153 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-fuchsia-200 {
+  --tw-text-opacity: 1;
+  color: rgb(245 208 254 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-fuchsia-300 {
+  --tw-text-opacity: 1;
+  color: rgb(240 171 252 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-fuchsia-400 {
+  --tw-text-opacity: 1;
+  color: rgb(232 121 249 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-slate-200 {
+  --tw-text-opacity: 1;
+  color: rgb(226 232 240 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-slate-300 {
+  --tw-text-opacity: 1;
+  color: rgb(203 213 225 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-slate-400 {
+  --tw-text-opacity: 1;
+  color: rgb(148 163 184 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-slate-500 {
+  --tw-text-opacity: 1;
+  color: rgb(100 116 139 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-slate-600 {
+  --tw-text-opacity: 1;
+  color: rgb(71 85 105 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .text-white {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+.llm-explorer .shadow {
+  --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+.llm-explorer .shadow-2xl {
+  --tw-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --tw-shadow-colored: 0 25px 50px -12px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+.llm-explorer .shadow-lg {
+  --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+.llm-explorer .shadow-sm {
+  --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+.llm-explorer .shadow-amber-400 {
+  --tw-shadow-color: #fbbf24;
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.llm-explorer .shadow-cyan-400 {
+  --tw-shadow-color: #22d3ee;
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.llm-explorer .shadow-cyan-500\/20 {
+  --tw-shadow-color: rgb(6 182 212 / 0.2);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.llm-explorer .shadow-cyan-500\/25 {
+  --tw-shadow-color: rgb(6 182 212 / 0.25);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.llm-explorer .shadow-emerald-400 {
+  --tw-shadow-color: #34d399;
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.llm-explorer .shadow-fuchsia-500 {
+  --tw-shadow-color: #d946ef;
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.llm-explorer .shadow-fuchsia-500\/20 {
+  --tw-shadow-color: rgb(217 70 239 / 0.2);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.llm-explorer .shadow-fuchsia-600\/20 {
+  --tw-shadow-color: rgb(192 38 211 / 0.2);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.llm-explorer .outline-none {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.llm-explorer .ring {
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+.llm-explorer .filter {
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
+}
+.llm-explorer .transition {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.llm-explorer .transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.llm-explorer .transition-opacity {
+  transition-property: opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.llm-explorer .transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.llm-explorer .duration-150 {
+  transition-duration: 150ms;
+}
+.llm-explorer .duration-300 {
+  transition-duration: 300ms;
+}
+
+    .llm-explorer * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    .llm-explorer, .llm-explorer {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #07090e;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .llm-explorer #canvas-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    /* Glassmorphism HUD styling */
+    .llm-explorer .hud-glass {
+      background: rgba(11, 16, 28, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .llm-explorer .hud-glass-active {
+      border-color: rgba(34, 211, 238, 0.55);
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    /* Custom Scrollbar */
+    .llm-explorer ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .llm-explorer ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .llm-explorer ::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.7);
+      border-radius: 9999px;
+    }
+    .llm-explorer ::-webkit-scrollbar-thumb:hover {
+      background: rgba(34, 211, 238, 0.8);
+    }
+    /* 3D Projected Floating Labels */
+    .llm-explorer .label-3d {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    .llm-explorer .label-3d:hover {
+      transform: translate(-50%, -108%) scale(1.06);
+      z-index: 30;
+    }
+    .llm-explorer .tensor-badge {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 9;
+      white-space: nowrap;
+    }
+    /* Custom Range Input */
+    .llm-explorer input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(30, 41, 59, 0.9);
+      height: 6px;
+      border-radius: 999px;
+      outline: none;
+    }
+    .llm-explorer input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #22d3ee;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.8);
+      border: 2px solid #ecfeff;
+      transition: transform 0.15s ease;
+    }
+    .llm-explorer input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    .llm-explorer .math-box {
+      font-family: 'JetBrains Mono', monospace;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(9, 13, 22, 0.95));
+      border-left: 3px solid #22d3ee;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.65; }
+      50% { opacity: 1; }
+    }
+    .llm-explorer .pulse-indicator {
+      animation: pulseGlow 2.2s infinite ease-in-out;
+    }
+    .llm-explorer .hover\:bg-cyan-500\/20:hover {
+  background-color: rgb(6 182 212 / 0.2);
+}
+    .llm-explorer .hover\:bg-cyan-500\/30:hover {
+  background-color: rgb(6 182 212 / 0.3);
+}
+    .llm-explorer .hover\:bg-cyan-500\/35:hover {
+  background-color: rgb(6 182 212 / 0.35);
+}
+    .llm-explorer .hover\:bg-fuchsia-500\/20:hover {
+  background-color: rgb(217 70 239 / 0.2);
+}
+    .llm-explorer .hover\:bg-slate-700:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(51 65 85 / var(--tw-bg-opacity, 1));
+}
+    .llm-explorer .hover\:bg-slate-800\/60:hover {
+  background-color: rgb(30 41 59 / 0.6);
+}
+    .llm-explorer .hover\:bg-slate-800\/70:hover {
+  background-color: rgb(30 41 59 / 0.7);
+}
+    .llm-explorer .hover\:from-fuchsia-500:hover {
+  --tw-gradient-from: #d946ef var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(217 70 239 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+    .llm-explorer .hover\:to-indigo-500:hover {
+  --tw-gradient-to: #6366f1 var(--tw-gradient-to-position);
+}
+    .llm-explorer .hover\:text-white:hover {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+    .llm-explorer .focus\:border-cyan-400:focus {
+  --tw-border-opacity: 1;
+  border-color: rgb(34 211 238 / var(--tw-border-opacity, 1));
+}
+    .llm-explorer .focus\:border-fuchsia-400:focus {
+  --tw-border-opacity: 1;
+  border-color: rgb(232 121 249 / var(--tw-border-opacity, 1));
+}
+    .llm-explorer .active\:scale-\[0\.98\]:active {
+  --tw-scale-x: 0.98;
+  --tw-scale-y: 0.98;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+    @media (min-width: 640px) {
+
+  .llm-explorer .sm\:block {
+    display: block;
+  }
+
+  .llm-explorer .sm\:inline {
+    display: inline;
+  }
+}
+    @media (min-width: 768px) {
+
+  .llm-explorer .md\:inline {
+    display: inline;
+  }
+}
+    @media (min-width: 1280px) {
+
+  .llm-explorer .xl\:inline {
+    display: inline;
+  }
+}
+  

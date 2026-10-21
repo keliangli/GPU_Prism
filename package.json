@@ -4,19 +4,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "dev": "node scripts/build-llm-styles.mjs && vite --host 127.0.0.1",
+    "build": "node scripts/build-llm-styles.mjs && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test",
     "test:extractors": "python -m unittest discover -s test/code-atlas -p test_*.py",
     "graph:sglang": "python tools/code_atlas/extract_graph.py && node scripts/code-atlas/sync-graph.mjs",
     "graph:deepinfer": "python tools/code_atlas/extract_deepinfer.py && node scripts/code-atlas/sync-graph.mjs deepinfer",
-    "graph:previous": "node scripts/code-atlas/make-baseline.mjs && node scripts/code-atlas/sync-graph.mjs"
+    "graph:previous": "node scripts/code-atlas/make-baseline.mjs && node scripts/code-atlas/sync-graph.mjs",
+    "llm:styles": "node scripts/build-llm-styles.mjs"
   },
   "dependencies": {
-    "three": "0.180.0"
+    "three": "0.180.0",
+    "lucide": "0.468.0"
   },
   "devDependencies": {
-    "vite": "^7.3.7"
+    "vite": "^7.3.7",
+    "tailwindcss": "3.4.17",
+    "postcss": "8.5.31"
   }
 }

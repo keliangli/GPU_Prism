@@ -290,3 +290,13 @@ npm run build
 ---
 
 本项目为独立架构学习项目，非 NVIDIA 官方产品。
+
+## LLM 架构与张量流
+
+顶部「LLM 架构」打开 `#/llm`，将用户提供的 `llm_arch_3d_explorer.html` 融入共享路由。支持 DeepSeek 风格 MLA / MoE / MTP、Dense GQA / SwiGLU、Hybrid MoE-Mamba 三类可编辑预设，提供 L1 模型塔、L2 单层拓扑和 L3 算子结构。
+
+保留张量粒子流、Top-K 专家重路由、输入输出形状、公式和代码示意、Batch / 序列长度 / 精度切换、配置编辑，以及相机和标签控制。侧栏在窄屏移至画布下方；离开页面释放 GPU 资源、动画与观察器。
+
+实现位于 `src/llm/`。样式和图标随项目本地构建，不加载原页面的 CDN 脚本；`npm run dev` / `npm run build` 自动生成局部样式，也可执行 `npm run llm:styles`。原文件校验信息见 [导入记录](docs/llm/import-manifest.json)。
+
+参数量、FLOPs 和缓存为教学估算。缓存按 GiB 标注，只计算指定精度下的注意力 KV 载荷；Hybrid 不含 SSM 状态。Hybrid 的 SSM 层以结构示意显示，不套用注意力计算量公式。

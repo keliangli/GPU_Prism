@@ -17,6 +17,7 @@ const modalRoot = document.querySelector('#modal-root');
 let scene;
 let torchAtlas=null;
 let codeAtlas=null;
+let llmExplorer=null;
 let routeSequence=0;
 let gpu = getGpu('h20');
 let levels=baseLevels,levelComponents=baseLevelComponents,flows=baseFlows;
@@ -34,7 +35,7 @@ const lab = new DeepLab({onExperiment:data=>scene?.setExperiment?.(data),onSelec
 }});
 
 const logo = `<span class="brand-mark"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m16 3 13 7-13 7L3 10zM3 16l13 7 13-7M3 22l13 7 13-7" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg></span><span class="brand-name">infar<span class="brand-period">.</span></span>`;
-function header(explorer = false) { const section=/^#\/(pytorch|sglang|deepinfer)(?:\/|$)/.exec(location.hash)?.[1]||'gpus';return `<header class="site-header"><a class="brand" href="#/gpus" aria-label="INFAR 首页">${logo}<span class="brand-divider"></span><span class="brand-caption">软硬件架构图鉴</span></a><nav aria-label="主导航"><a class="nav-item ${section==='gpus'?'active':''}" href="#/gpus">GPU 图鉴</a><a class="nav-item ${section==='pytorch'?'active':''}" href="#/pytorch">PyTorch 源码</a><a class="nav-item ${section==='sglang'?'active':''}" href="#/sglang">SGLang 源码</a><a class="nav-item ${section==='deepinfer'?'active':''}" href="#/deepinfer">DeepInfer 源码</a><button class="nav-item" data-action="guide">探索指南</button><button class="nav-item" data-action="sources">数据来源 ${icon('external',13)}</button></nav><div class="header-right"><span class="live-status"><i></i> 为理解算力而构建</span><span class="edition">BETA 0.8</span></div></header>`; }
+function header(explorer = false) { const section=/^#\/(pytorch|sglang|deepinfer|llm)(?:\/|$)/.exec(location.hash)?.[1]||'gpus';return `<header class="site-header"><a class="brand" href="#/gpus" aria-label="INFAR 首页">${logo}<span class="brand-divider"></span><span class="brand-caption">软硬件架构图鉴</span></a><nav aria-label="主导航"><a class="nav-item ${section==='gpus'?'active':''}" href="#/gpus">GPU 图鉴</a><a class="nav-item ${section==='pytorch'?'active':''}" href="#/pytorch">PyTorch 源码</a><a class="nav-item ${section==='sglang'?'active':''}" href="#/sglang">SGLang 源码</a><a class="nav-item ${section==='deepinfer'?'active':''}" href="#/deepinfer">DeepInfer 源码</a><a class="nav-item ${section==='llm'?'active':''}" href="#/llm">LLM 架构</a><button class="nav-item" data-action="guide">探索指南</button><button class="nav-item" data-action="sources">数据来源 ${icon('external',13)}</button></nav><div class="header-right"><span class="live-status"><i></i> 为理解算力而构建</span><span class="edition">BETA 0.9</span></div></header>`; }
 function footer() { return `<footer class="site-footer"><span>INFAR <span class="footer-dot">/</span> 看见架构，理解算力。</span><span>独立架构学习项目 <i>·</i> 非官方产品</span><button data-action="sources">来源与模型说明 ${icon('external',12)}</button></footer>`; }
 
 // 搜索匹配字段统一由型号配置生成，主推卡片与网格卡片口径一致。
@@ -167,6 +168,18 @@ function destroyScene() {stopFlowTimer();scene?.dispose();scene=null;}
 async function route() {
   const sequence=++routeSequence;
   closeModal();
+  if(/^#\/llm(?:\/|$)/.test(location.hash)){
+    destroyScene();torchAtlas?.dispose();torchAtlas=null;codeAtlas?.dispose();codeAtlas=null;
+    if(llmExplorer)return;
+    const {createLlmExplorer}=await import('./llm/page.js');
+    if(sequence!==routeSequence)return;
+    app.innerHTML=`${header()}<main id="llm-root"></main>${footer()}`;
+    llmExplorer=createLlmExplorer(document.querySelector('#llm-root'));
+    document.title='LLM 架构与张量流 · INFAR';
+    document.querySelector('.site-header nav .active')?.scrollIntoView({block:'nearest',inline:'center'});
+    window.scrollTo(0,0);return;
+  }
+  llmExplorer?.dispose();llmExplorer=null;
   const codeProject=/^#\/(sglang|deepinfer)(?:\/|$)/.exec(location.hash)?.[1];
   if(codeProject){
     destroyScene();torchAtlas?.dispose();torchAtlas=null;
@@ -202,7 +215,8 @@ function notify(message) {const el=document.querySelector('#toast');el.textConte
 function showModal(type) {
   lastFocus=document.activeElement;
   let content;
-  if(codeAtlas)content=codeAtlas.modalContent(type);
+  if(llmExplorer)content=llmExplorer.modalContent(type);
+  else if(codeAtlas)content=codeAtlas.modalContent(type);
   else if(torchAtlas)content=torchAtlas.modalContent(type);
   else if(type==='sources')content=`<div class="eyebrow">BUILT ON PUBLIC DOCUMENTATION</div><h2>有来源的知识，<br>有边界的模型。</h2><p class="modal-intro">本项目收录 Hopper、Blackwell、Ampere 与昇腾达芬奇架构的 11 款计算芯片。产品规格、公开架构限制与一手研究配置分别标注，具体版本见型号说明。</p><div class="source-list">${sources.map((s,i)=>`<a href="${s.url}" target="_blank" rel="noopener noreferrer"><span class="source-number">${String(i+1).padStart(2,'0')}</span><div><span class="small-kicker">${s.kind}</span><h3>${s.title}</h3><p>${s.label}</p></div>${icon('external',17)}</a>`).join('')}</div><div class="model-disclaimer">${icon('info',20)}<div><strong>关于 3D 模型</strong><p>模型是可交互的教学示意，而非芯片逆向或精确 CAD。裸片布局、HBM 数量、SM 数量、尺寸与布线不对应制造图纸。不同芯片使用对应架构的功能模型。CUDA 的 bank、寄存器与 Warp 模型适用于 NVIDIA；昇腾单独展示 AIC / AIV、L1 / UB / L0 与搬运同步。资源预算采用对应计算能力的公开限制，不预测实测占用率。未公开的物理 bank、端口与内部单元数量保留待核实。SXM、PCIe、NVL 等版本的规格不能混用。</p></div></div>`;
   else content=`<div class="eyebrow">A LITTLE CURIOSITY GOES A LONG WAY</div><h2>你的硬件探索指南。</h2><p class="modal-intro">不需要芯片设计背景。从整体开始，再一点点走进细节。</p><div class="guide-steps"><div><span>01</span><div><h3>先看连接：封装总览</h3><p>找到 GPU 核心、HBM 显存和互联接口。打开「分层展开」，看看它们如何组合在一起。</p></div>${icon('cube',25)}</div><div><span>02</span><div><h3>再看组织：芯片架构</h3><p>看看计算集群与片上缓存。点击组件，理解数据如何抵达计算单元。</p></div>${icon('grid',25)}</div><div><span>03</span><div><h3>走进计算：SM 或 AIC / AIV</h3><p>NVIDIA 查看 CUDA / Tensor / RT 与调度器；昇腾查看 Cube / Vector、Scalar 与数据搬运。</p></div>${icon('chip',25)}</div><div><span>04—06</span><div><h3>继续深入：存储、操作数与指令执行</h3><p>NVIDIA 可实验 bank 冲突、寄存器预算和 Warp 调度；昇腾可逐步追踪 Cube 数据通路、片上缓冲与流水同步。</p></div>${icon('flow',25)}</div></div><div class="keyboard-guide"><span>${icon('mouse',18)} 左键拖动 <strong>旋转</strong></span><span>${icon('move',18)} 右键拖动 <strong>平移</strong></span><span>${icon('plus',18)} 滚轮 <strong>缩放</strong></span><span><kbd>R</kbd> 重置视角</span><span><kbd>1</kbd>—<kbd>6</kbd> 切换视图</span><span><kbd>E</kbd> 分层展开</span></div><a class="primary-button" href="#/gpu/${gpu.id}" data-action="start-exploring">开始探索 ${gpu.name} ${icon('arrow',19)}</a>`;
@@ -213,7 +227,7 @@ function showModal(type) {
 function closeModal() {if(!modalRoot.innerHTML)return;modalRoot.innerHTML='';document.body.classList.remove('modal-open');lastFocus?.focus();}
 
 document.addEventListener('click', async e=>{
-  if(e.target.closest('.code-atlas'))return;
+  if(e.target.closest('.code-atlas, .llm-explorer'))return;
   const filter=e.target.closest('[data-filter]');if(filter){state.filter=filter.dataset.filter;filterGpus();return;}
   const level=e.target.closest('[data-level]');if(level){setLevel(level.dataset.level);return;}
   const comp=e.target.closest('[data-component]');if(comp){selectComponent(comp.dataset.component);return;}
