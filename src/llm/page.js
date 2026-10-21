@@ -4,11 +4,15 @@ import template from './template.html?raw';
 import { ARCH_PRESETS, normalizeLlmConfig, chooseLlmExperts, estimateLlmKv } from './data.js';
 import { renderLlmIcons } from './icons.js';
 import { disposeLlmObject } from './resources.js';
+import { ATTENTION_NAMES, getLlmLayer, estimateLlmParameters } from './models.js';
+import { getPublishedComponent } from './components.js';
+import { initializeModelPicker, renderModelSummary } from './catalog-ui.js';
 import './utilities.css';
 import './style.css';
 
 export function createLlmExplorer(root){
-  root.className='llm-explorer';root.innerHTML=template;root.dataset.preset='deepseek';root.dataset.lod='3';
+  const initialKey='deepseek-v4.1-flash';
+  root.className='llm-explorer';root.innerHTML=template;root.dataset.preset=initialKey;root.dataset.lod='3';
   const get=id=>root.querySelector('#'+id);
   let disposed=false,frame=null,copyTimer=null;
   const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -21,8 +25,8 @@ export function createLlmExplorer(root){
      *************************************************************************/
     // Global Application State
     const state = {
-      presetKey: 'deepseek',
-      config: normalizeLlmConfig(ARCH_PRESETS.deepseek),
+      presetKey: initialKey,
+      config: normalizeLlmConfig(ARCH_PRESETS[initialKey]),
       lod: 3, // Start at L3 so user immediately experiences rich MLA & 3D MoE grid, can switch to L1/L2 anytime
       activeLayer: 4,
       batchSize: 4,
@@ -33,13 +37,14 @@ export function createLlmExplorer(root){
       autoRotate: false,
       showResiduals: true,
       showLabels: true,
-      activeExperts: [3, 19, 42, 77, 108, 154, 201, 240],
-      selectedNodeId: 'mla_kv_latent'
+      activeExperts: chooseLlmExperts(ARCH_PRESETS[initialKey]),
+      selectedNodeId: 'attn_core'
     };
 
     // Detailed Operator Knowledge Base Generator (adapts dynamically to state.config, B, S)
     function getComponentDetails(nodeId) {
       const cfg = state.config;
+      if(cfg.verified||cfg.availability==='preview')return getPublishedComponent(cfg,state.activeLayer,nodeId,state);
       const attnMode=cfg.attn_mode==='ssm_hybrid'&&state.activeLayer%4===3?'gqa':cfg.attn_mode;
       const B = state.batchSize;
       const S = state.seqLen;
@@ -359,14 +364,17 @@ export function createLlmExplorer(root){
       if (showLabel) {
         const el = document.createElement('div');
         el.className = 'label-3d px-2.5 py-1 rounded-lg hud-glass border border-slate-600/50 text-[11px] shadow-lg flex items-center gap-1.5';
+        el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-label',`${title} · ${subtitle}`);
         el.innerHTML = `
           <span class="font-semibold text-white">${title}</span>
           <span class="font-mono text-[10px] text-cyan-300">${subtitle}</span>
         `;
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          selectComponent(nodeId, mesh);
+          if(typeof mesh.userData.layerIndex==='number'){setActiveLayer(mesh.userData.layerIndex);selectComponent(nodeId);}
+          else selectComponent(nodeId, mesh);
         });
+        el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}});
         el.addEventListener('dblclick', (e) => {
           e.stopPropagation();
           drillDownLOD();
@@ -496,8 +504,10 @@ export function createLlmExplorer(root){
      *************************************************************************/
     function buildArchitectureScene(animateCamera = true) {
       clearSceneStage();
-
-      if (state.lod === 1) {
+      if(state.config.availability==='preview'){
+        buildPreviewInterface();
+        if(animateCamera)flyCameraTo(new THREE.Vector3(0,8,36),new THREE.Vector3(0,0,0));
+      } else if (state.lod === 1) {
         buildL1MacroTower();
         if (animateCamera) flyCameraTo(new THREE.Vector3(0, 8, 36), new THREE.Vector3(0, 5, 0));
       } else if (state.lod === 2) {
@@ -508,9 +518,85 @@ export function createLlmExplorer(root){
         if (animateCamera) flyCameraTo(new THREE.Vector3(0, 19, 38), new THREE.Vector3(0, 1, 0));
       }
 
+      if(state.config.verified&&state.lod>1){
+        const c=state.config,l=getLlmLayer(c,state.activeLayer);
+        if(c.residual==='mhc')for(let i=1;i<c.hc_mult;i++){
+          const z=(i-1)*.65+1.2;
+          linkModules([[-18.5,1.2,z],[-10,6+i*.15,z],[-.5,.9,z]],COLORS.amber,true);
+          linkModules([[-.5,.9,z],[9,6+i*.15,z],[18,.9,z]],COLORS.amber,true);
+        }
+        if(c.residual==='attnres'){
+          moduleBlock('residual_add','Depth Block History','AttnRes · block size 12',-.6,-5.4,-2,COLORS.amber,4,1.8,3);
+          linkModules([[-.6,-5.4,-2],[-4,-3,-3],[-12,0,0]],COLORS.amber,true);
+          linkModules([[-.6,-5.4,-2],[2,-3,-3],[2.8,0,0]],COLORS.amber,true);
+        }
+        if(l.engram&&state.lod===3){
+          moduleBlock('engram','Engram Lookup','当前层的条件记忆分支',-18,-4.8,1,COLORS.amber,3.4,1.8,3);
+          linkModules([[-18,-4.8,1],[-18.5,0,0]],COLORS.amber);
+        }
+      }
       residualGroup.visible = state.showResiduals;
       labelsContainer.style.display = state.showLabels ? 'block' : 'none';
       updateAllMetricsAndUI();
+    }
+
+    function moduleBlock(id,title,sub,x,y,z,color,w=3.2,h=2.2,d=2.8){
+      const mesh=createGlowingBlock(w,h,d,color,.92);mesh.position.set(x,y,z);archGroup.add(mesh);
+      registerInteractiveNode(mesh,id,title,sub,new THREE.Vector3(0,h/2+.9,0));return mesh;
+    }
+    function linkModules(points,color=COLORS.cyanBright,residual=false){
+      createConnectionTube(points.map(p=>new THREE.Vector3(...p)),color,.08,residual,3,.004);
+    }
+    function residualTitle(){return state.config.residual==='mhc'?'mHC · 4 路流混合':state.config.residual==='attnres'?'AttnRes · 深度聚合':'Residual Add (+)';}
+    function buildPreviewInterface(){
+      moduleBlock('attn_core','用户输入 / 上下文','≤ 1,048,576 tokens',-12,0,0,COLORS.emerald,5,3,4);
+      moduleBlock('attn_core','Kimi K2.8 Preview','内部架构未公开',0,0,0,COLORS.violet,8,5,5);
+      moduleBlock('attn_core','文本响应','kimi-for-coding',12,0,0,COLORS.cyan,5,3,4);
+      linkModules([[-12,0,0],[0,0,0],[12,0,0]]);
+    }
+    function buildPublishedAttention(){
+      const c=state.config,l=getLlmLayer(c,state.activeLayer),a=l.attention;
+      if(a==='kda'){
+        moduleBlock('kda_conv','Q / K / V + Short Conv',`kernel ${c.linear_attn_config.short_conv_kernel_size}`,-13.4,2,-1.7,COLORS.cyanBright,4.4);
+        moduleBlock('kda_gate','Input-dependent Gate',`${c.linear_attn_config.num_heads} heads`,-13.4,-2.4,2.2,COLORS.amber,4.4);
+        moduleBlock('kda_state','KDA Recurrent State',`${c.linear_attn_config.head_dim} dim / head`,-7.6,0,0,COLORS.violet,4.2,3.8,4);
+        moduleBlock('attn_core','Readout + Output Proj','状态读取 / 门控',-3.6,0,0,COLORS.cyan,2.4,3,3);
+        linkModules([[-18.5,0,0],[-13.4,2,-1.7],[-7.6,0,0],[-3.6,0,0]]);
+        linkModules([[-18.5,0,0],[-13.4,-2.4,2.2],[-7.6,0,0]],COLORS.amber);
+        linkModules([[-7.6,-1.8,0],[-9,-4.7,0],[-5.5,-4.7,0],[-7.6,-1.8,0]],COLORS.violet);
+      }else if(a==='csa2'||a==='swa'){
+        moduleBlock('mla_q_latent','Query Low-rank',`rank ${c.q_lora_rank}`,-14.3,3,-2,COLORS.cyanBright,3.4);
+        moduleBlock('attn_core','SWA · 128-token Window','局部注意力',-9.4,3,-2,COLORS.cyan,4);
+        linkModules([[-18.5,0,0],[-14.3,3,-2],[-9.4,3,-2],[-3.5,0,0]]);
+        if(a==='csa2'){
+          moduleBlock('csa_cache','Shared Global KV',`${l.stage} · ${l.indexer}`,-14.3,-3,2.5,COLORS.emerald,3.4);
+          kvCacheMeshes.push(archGroup.children.at(-1));
+          moduleBlock('indexer','Hierarchical Indexer',`Top-${c.index_topk} · ${l.indexer}`,-9.4,-3,2.5,COLORS.amber,4);
+          moduleBlock('attn_core','CSA2 · Sparse Read',`压缩比 ${c.compress_ratios[state.activeLayer]}`,-3.5,0,0,COLORS.cyan,3,3.5,3.5);
+          linkModules([[-14.3,-3,2.5],[-9.4,-3,2.5],[-3.5,0,0]],COLORS.emerald);
+          linkModules([[-14.3,3,-2],[-9.4,-3,2.5]],COLORS.amber);
+        }else moduleBlock('attn_core','Local Attention Output','本层无全局分支',-3.5,0,0,COLORS.cyan,3,3.5,3.5);
+      }else{
+        moduleBlock('mla_q_latent','Query Latent',`rank ${c.q_lora_rank}`,-14.2,3,-2.4,COLORS.cyanBright,3.4);
+        const kv=moduleBlock('mla_kv_latent','Latent KV Cache',`${c.kv_lora_rank} + ${c.qk_rope_head_dim} channels`,-14.2,-2.9,2.4,COLORS.emerald,3.4);
+        kvCacheMeshes.push(kv);
+        moduleBlock('attn_core',a==='dsa'?'Sparse MLA Core':'MLA Core',`${c.num_attention_heads} heads`,-4.5,0,0,COLORS.cyan,3.4,4,3.6);
+        linkModules([[-18.5,0,0],[-14.2,3,-2.4],[-4.5,0,0]]);
+        linkModules([[-18.5,0,0],[-14.2,-2.9,2.4],[-4.5,0,0]],COLORS.emerald);
+        if(c.qk_rope_head_dim>0){
+          const ring=createRoPERing(new THREE.Vector3(-9.7,0,0),1);
+          registerInteractiveNode(ring,'rope_decoupled','RoPE Branch',`${c.qk_rope_head_dim} dim`,new THREE.Vector3(0,1.8,0));
+          linkModules([[-14.2,3,-2.4],[-9.7,0,0],[-4.5,0,0]],COLORS.amber);
+        }
+        if(a==='dsa'){
+          moduleBlock('indexer','DSA Indexer',`Top-${c.index_topk} · ${l.indexer??'full'}`,-9.4,-4.3,-2.4,COLORS.amber,3.6);
+          linkModules([[-18.5,0,0],[-9.4,-4.3,-2.4],[-4.5,0,0]],COLORS.amber);
+        }
+        if(c.mla_use_output_gate){
+          moduleBlock('output_gate','Output Gate','Gated MLA',-1.9,-3.4,2,COLORS.violet,2.3,1.7,2);
+          linkModules([[-4.5,0,0],[-1.9,-3.4,2],[-.5,0,0]],COLORS.violet);
+        }
+      }
     }
 
     // ==================== L1: MACRO MODEL TOWER ====================
@@ -532,13 +618,15 @@ export function createLlmExplorer(root){
       const slabThickness = slabGap * 0.68;
 
       for (let i = 0; i < visualSlabs; i++) {
-        const realLayerIdx = Math.floor((i / visualSlabs) * totalLayers);
+        const realLayerIdx = Math.floor((i / (visualSlabs-1)) * (totalLayers-1));
         const isDense = realLayerIdx < cfg.first_k_dense_replace || cfg.n_routed_experts === 0;
-        const isSSM = cfg.attn_mode === 'ssm_hybrid' && (realLayerIdx % 4 !== 3);
+        const layer=getLlmLayer(cfg,realLayerIdx);
+        const isSSM = ['ssm','kda'].includes(layer.attention);
         const isSelectedLayer = Math.abs(realLayerIdx - state.activeLayer) <= Math.ceil(totalLayers / visualSlabs / 2);
 
         let slabColor = isDense ? COLORS.cyan : COLORS.magenta;
         if (isSSM) slabColor = COLORS.violet;
+        if(cfg.encoder_layers)slabColor=realLayerIdx<cfg.encoder_layers?COLORS.cyan:COLORS.magenta;
         if (isSelectedLayer) slabColor = COLORS.amber;
 
         const w = isSelectedLayer ? widthScale * 1.18 : widthScale;
@@ -547,7 +635,7 @@ export function createLlmExplorer(root){
         slab.position.set(0, yPos, 0);
         archGroup.add(slab);
 
-        const layerTypeTag = isSSM ? 'Mamba-2 + MoE' : (isDense ? 'Dense GQA/MLA' : 'MLA + DeepSeekMoE');
+        const layerTypeTag = `${layer.stage} · ${ATTENTION_NAMES[layer.attention]} + ${isDense?'Dense':'MoE'}`;
         const showSlabLabel = isSelectedLayer || i === 0 || i === visualSlabs - 1;
         registerInteractiveNode(
           slab,
@@ -558,6 +646,25 @@ export function createLlmExplorer(root){
           showSlabLabel
         );
         slab.userData.layerIndex = realLayerIdx;
+      }
+
+      if(cfg.vision){
+        moduleBlock('vision_encoder','Vision Encoder + Projector',`${cfg.vision.num_hidden_layers??cfg.vision.depth??cfg.vision.vt_num_hidden_layers} 层视觉主干`,-10,-5.2,0,COLORS.violet,4,3,4);
+        linkModules([[-10,-5.2,0],[-6.5,-7,1],[0,-6.2,0]],COLORS.violet);
+      }
+      if(cfg.encoder_layers){
+        moduleBlock('ced_bridge','CED · 20 Encoder → 20 Decoder','最终编码器隐状态',10,2.8,0,COLORS.amber,4.4,2.6,4);
+        moduleBlock('csa_cache','跨层共享 Global KV','来源层 #2 / #8 / #14 / #20',10,7.1,0,COLORS.emerald,4.4,2.4,4);
+        linkModules([[0,2.8,0],[10,2.8,0],[10,7.1,0],[0,9.4,0]],COLORS.emerald);
+      }
+      if(cfg.engram_layer_ids){
+        moduleBlock('engram','Engram · 196 B',`记忆层 #${cfg.engram_layer_ids.join(' / #')}`,-10,2.8,0,COLORS.amber,4,3,4);
+        linkModules([[-10,2.8,0],[-5,0,1],[0,-3.8,0]],COLORS.amber);
+        linkModules([[-10,2.8,0],[-5,3,1],[0,1,0]],COLORS.amber);
+      }
+      if(cfg.residual==='attnres'){
+        moduleBlock('residual_add','Attention Residuals','按深度块聚合历史表示',10,3,0,COLORS.amber,4.5,2.4,4);
+        for(const y of [-2,3,8])linkModules([[0,y,0],[6,y,1],[10,3,0]],COLORS.amber,true);
       }
 
       // 3. Final RMSNorm
@@ -577,7 +684,7 @@ export function createLlmExplorer(root){
         const mtpBlock = createGlowingBlock(3.8, 2.2, 3.8, COLORS.amber, 0.92);
         mtpBlock.position.set(5.2, 12.8, 0);
         archGroup.add(mtpBlock);
-        registerInteractiveNode(mtpBlock, 'mtp_module', 'MTP 多 Token 预测头', `Next-2 Token Speculative`, new THREE.Vector3(0, 1.7, 0));
+        registerInteractiveNode(mtpBlock, 'mtp_module', cfg.dspark_block_size?'DSpark 草稿 / 验证':'MTP 多 Token 预测头', cfg.dspark_block_size?`${cfg.dspark_block_size}-token block · ${cfg.num_nextn_predict_layers} 预测层`:`${cfg.num_nextn_predict_layers??1} next-n 预测层`, new THREE.Vector3(0, 1.7, 0));
 
         createConnectionTube([
           new THREE.Vector3(0, 10.5, 0),
@@ -605,6 +712,7 @@ export function createLlmExplorer(root){
     // ==================== L2: SINGLE LAYER EXPLODED VIEW ====================
     function buildL2ExplodedLayer() {
       const cfg = state.config;
+      const layer=getLlmLayer(cfg,state.activeLayer);
       const isDense = state.activeLayer < cfg.first_k_dense_replace || cfg.n_routed_experts === 0;
       const isSSM = cfg.attn_mode === 'ssm_hybrid' && (state.activeLayer % 4 !== 3);
 
@@ -624,20 +732,21 @@ export function createLlmExplorer(root){
       registerInteractiveNode(norm1, 'rmsnorm', 'Input RMSNorm', 'Pre-Attn Norm', new THREE.Vector3(0, 2.6, 0));
 
       // 3. Attention / Sequence Mixer Block
-      const attnTitle = isSSM ? 'Mamba-2 SSD Block' : (cfg.attn_mode === 'mla' ? 'MLA 多头潜在注意力' : 'GQA 分组查询注意力');
-      const attnSub = isSSM ? 'Linear State Space' : (cfg.attn_mode === 'mla' ? `c_KV=${cfg.kv_lora_rank}, ${cfg.num_attention_heads}H` : `${cfg.num_attention_heads}Q : ${cfg.num_key_value_heads}KV`);
+      const attnTitle = ATTENTION_NAMES[layer.attention];
+      const attnSub = `${layer.stage} · ${layer.indexer??cfg.num_attention_heads+' heads'}`;
       const attnBlock = createGlowingBlock(4.8, 4.6, 4.8, COLORS.cyan, 0.9);
       attnBlock.position.set(-5.8, yBase, 0);
       archGroup.add(attnBlock);
-      registerInteractiveNode(attnBlock, cfg.attn_mode === 'mla' ? 'mla_kv_latent' : 'attn_core', attnTitle, attnSub, new THREE.Vector3(0, 3.1, 0));
+      registerInteractiveNode(attnBlock, 'attn_core', attnTitle, attnSub, new THREE.Vector3(0, 3.1, 0));
 
       // Floating KV Cache badge block attached beneath Attention
       const kvScale = getKVCacheVisualScale();
       const kvBlock = createGlowingBlock(2.6 * kvScale, 1.3 * kvScale, 2.6 * kvScale, COLORS.emerald, 0.92);
       kvBlock.position.set(-5.8, yBase - 4.2, 2.2);
       archGroup.add(kvBlock);
-      kvCacheMeshes.push(kvBlock);
-      registerInteractiveNode(kvBlock, 'mla_kv_latent', cfg.attn_mode === 'mla' ? 'Latent KV Cache' : 'GQA KV Cache', `c_KV [${state.batchSize}, ${state.seqLen}, ${cfg.kv_lora_rank}]`, new THREE.Vector3(0, -1.5, 0));
+      const isRecurrent=['kda','ssm'].includes(layer.attention);
+      if(!isRecurrent)kvCacheMeshes.push(kvBlock);
+      registerInteractiveNode(kvBlock,isRecurrent?(cfg.verified?'kda_state':'attn_core'):layer.attention==='swa'?'attn_core':cfg.encoder_layers?'csa_cache':'mla_kv_latent',isRecurrent?'Recurrent State':layer.attention==='swa'?'Local SWA State':cfg.encoder_layers?'SWA / Shared Global KV':'Attention KV Cache',isRecurrent?'递推状态 · 无逐 Token KV 表':layer.attention==='swa'?'128-token window':`${cfg.kv_lora_rank??cfg.head_dim} latent channels`,new THREE.Vector3(0,-1.5,0));
 
       createConnectionTube([
         new THREE.Vector3(-5.8, yBase - 2.2, 0),
@@ -651,7 +760,7 @@ export function createLlmExplorer(root){
       );
       resAdd1.position.set(0, yBase, 0);
       archGroup.add(resAdd1);
-      registerInteractiveNode(resAdd1, 'residual_add', 'Residual Add (+)', 'h_mid = x + Attn(x)', new THREE.Vector3(0, 2.0, 0));
+      registerInteractiveNode(resAdd1,'residual_add',residualTitle(),'Attention → 残差流混合',new THREE.Vector3(0,2,0));
 
       // 5. Post-Attention RMSNorm
       const norm2 = createGlowingBlock(1.6, 3.8, 3.8, COLORS.emerald, 0.9);
@@ -660,7 +769,7 @@ export function createLlmExplorer(root){
       registerInteractiveNode(norm2, 'rmsnorm', 'Post-Attn RMSNorm', 'Pre-FFN Norm', new THREE.Vector3(0, 2.6, 0));
 
       // 6. FFN / MoE Block
-      const ffnTitle = isDense ? 'Dense SwiGLU FFN' : `DeepSeekMoE (${cfg.n_routed_experts} 专家)`;
+      const ffnTitle = isDense ? 'Dense FFN' : `${cfg.routed_expert_hidden_size?'LatentMoE':'MoE'} (${cfg.n_routed_experts} 专家)`;
       const ffnSub = isDense ? `d_ff = ${cfg.intermediate_size}` : `Top-${cfg.num_experts_per_tok} + ${cfg.n_shared_experts} Shared`;
       const ffnBlock = createGlowingBlock(5.2, 4.8, 5.2, COLORS.magenta, 0.9);
       ffnBlock.position.set(10.8, yBase, 0);
@@ -674,7 +783,9 @@ export function createLlmExplorer(root){
       );
       resAdd2.position.set(17, yBase, 0);
       archGroup.add(resAdd2);
-      registerInteractiveNode(resAdd2, 'residual_add', 'Layer Output (+)', 'h_l = h_mid + FFN(h_mid)', new THREE.Vector3(0, 2.0, 0));
+      registerInteractiveNode(resAdd2,'residual_add',residualTitle(),'FFN → 残差流混合',new THREE.Vector3(0,2,0));
+
+      if(layer.engram){moduleBlock('engram','Engram Lookup','当前层的条件记忆分支',-13,-4,2,COLORS.amber);linkModules([[-17,0,0],[-13,-4,2],[-12,0,0]],COLORS.amber);}
 
       // Main Forward Pipeline Tube
       createConnectionTube([
@@ -721,7 +832,9 @@ export function createLlmExplorer(root){
       archGroup.add(normIn);
       registerInteractiveNode(normIn, 'rmsnorm', 'Input RMSNorm', `[B, S, ${cfg.hidden_size}]`, new THREE.Vector3(0, 2.4, 0));
 
-      if (cfg.attn_mode === 'mla') {
+      if (cfg.verified) {
+        buildPublishedAttention();
+      } else if (cfg.attn_mode === 'mla') {
         // Branch 1 (Bottom/Front): Latent KV Compression c_t^KV (dim=512)
         const kvScale = getKVCacheVisualScale();
         const kvLatentBlock = createGlowingBlock(3.2 * kvScale, 1.8 * kvScale, 2.4 * kvScale, COLORS.emerald, 0.95);
@@ -800,7 +913,7 @@ export function createLlmExplorer(root){
       );
       midAdd.position.set(-0.5, 0, 0);
       archGroup.add(midAdd);
-      registerInteractiveNode(midAdd, 'residual_add', 'Residual Add (+)', 'x + Attention(x)', new THREE.Vector3(0, 1.7, 0));
+      registerInteractiveNode(midAdd,'residual_add',residualTitle(),'Attention → residual stream',new THREE.Vector3(0,1.7,0));
 
       const normPost = createGlowingBlock(1.4, 3.4, 3.4, COLORS.emerald, 0.9);
       normPost.position.set(2.8, 0, 0);
@@ -828,7 +941,7 @@ export function createLlmExplorer(root){
         const sharedNode = createGlowingBlock(3.0, 1.8, 2.2, COLORS.emerald, 0.94);
         sharedNode.position.set(12.2, 4.4, 2.8);
         archGroup.add(sharedNode);
-        registerInteractiveNode(sharedNode, 'shared_expert', 'Shared Expert (常亮共享专家)', `All Tokens Pass Through`, new THREE.Vector3(0, 1.6, 0));
+        registerInteractiveNode(sharedNode,'shared_expert',`${cfg.n_shared_experts} Shared Expert${cfg.n_shared_experts>1?'s':''}`,`所有 Token 常驻分支`,new THREE.Vector3(0,1.6,0));
 
         createConnectionTube([
           new THREE.Vector3(2.8, 0.5, 0),
@@ -840,8 +953,8 @@ export function createLlmExplorer(root){
         // 3. 3D InstancedMesh Matrix of Routed Experts (e.g., 256 experts arranged in a 16x8x2 3D grid)
         const nE = cfg.n_routed_experts;
         const cols = nE >= 128 ? 16 : 8;
-        const rows = Math.ceil(nE / (cols * 2));
-        const depthLayers = 2;
+        const depthLayers = nE>512?4:2;
+        const rows = Math.ceil(nE / (cols * depthLayers));
 
         const boxGeo = new THREE.BoxGeometry(0.46, 0.46, 0.46);
         const boxMat = new THREE.MeshStandardMaterial({
@@ -855,7 +968,7 @@ export function createLlmExplorer(root){
 
         // Proxy bounding box for raycasting & label on the MoE 3D Matrix
         const proxyGridBox = new THREE.Mesh(
-          new THREE.BoxGeometry(cols * 0.62, rows * 0.62, 2.2),
+          new THREE.BoxGeometry(cols * 0.62, rows * 0.62, depthLayers*1.15),
           new THREE.MeshBasicMaterial({ visible: false })
         );
         proxyGridBox.position.copy(moeInstancedMesh.position);
@@ -894,14 +1007,19 @@ export function createLlmExplorer(root){
         );
         outAdd.position.set(18.0, 0, 0);
         archGroup.add(outAdd);
-        registerInteractiveNode(outAdd, 'residual_add', 'MoE Weighted Sum + Residual', `Layer #${state.activeLayer} Output`, new THREE.Vector3(0, 1.9, 0));
+        registerInteractiveNode(outAdd,'residual_add',residualTitle(),`Layer #${state.activeLayer} Output`,new THREE.Vector3(0,1.9,0));
 
         moeRouterOrigin = routerNode.position.clone();
         moeSumTarget = outAdd.position.clone();
         moeLaserGroup = new THREE.Group();
         archGroup.add(moeLaserGroup);
 
-        createConnectionTube([new THREE.Vector3(2.8, 0, 0), new THREE.Vector3(6.5, 0, 0)], COLORS.magenta, 0.1, false, 2, 0.006);
+        if(cfg.routed_expert_hidden_size){
+          moduleBlock('latent_moe','Latent Down-Proj',`${cfg.hidden_size} → ${cfg.routed_expert_hidden_size}`,4.4,-4.2,1.8,COLORS.violet,2.8,1.8,2.4);
+          moduleBlock('latent_moe','Latent Up-Proj',`${cfg.routed_expert_hidden_size} → ${cfg.hidden_size}`,17,-4.2,1.8,COLORS.violet,2.8,1.8,2.4);
+          linkModules([[2.8,0,0],[4.4,-4.2,1.8],[6.5,0,0]],COLORS.magenta);
+          moeSumTarget.set(17,-4.2,1.8);linkModules([[17,-4.2,1.8],[18,0,0]],COLORS.violet);
+        }else createConnectionTube([new THREE.Vector3(2.8, 0, 0), new THREE.Vector3(6.5, 0, 0)], COLORS.magenta, 0.1, false, 2, 0.006);
 
         // Paint active Top-K experts and laser beams
       } else {
@@ -945,22 +1063,19 @@ export function createLlmExplorer(root){
     function updateMoERoutingVisuals() {
       const cfg = state.config;
       const nE = cfg.n_routed_experts;
-      const topK = cfg.num_experts_per_tok;
+      const topK = getLlmLayer(cfg,state.activeLayer).dense?0:(cfg.num_experts_per_tok??0);
 
       // Ensure activeExperts indices are valid for current nE
       state.activeExperts = state.activeExperts.filter(idx => idx < nE);
-      while (state.activeExperts.length < topK && nE > 0) {
-        const candidate = Math.floor(Math.random() * nE);
-        if (!state.activeExperts.includes(candidate)) state.activeExperts.push(candidate);
-      }
+      if(state.activeExperts.length<topK)state.activeExperts=chooseLlmExperts(cfg);
       state.activeExperts = state.activeExperts.slice(0, topK).sort((a, b) => a - b);
 
       // Update Left HUD Active Experts Badges
       get('topk-count-label').textContent = topK;
-      get('total-experts-label').textContent = nE;
+      get('total-experts-label').textContent = nE??'—';
       const listEl = get('active-experts-list');
-      if (nE === 0) {
-        listEl.innerHTML = `<span class="text-slate-400">当前为稠密架构 (Dense SwiGLU)，无路由专家</span>`;
+      if (!nE || topK===0) {
+        listEl.innerHTML = `<span class="text-slate-400">当前层不进行专家路由；Top-K 仅在 MoE 层演示</span>`;
       } else {
         listEl.innerHTML = state.activeExperts.map(id =>
           `<span class="px-1.5 py-0.5 rounded bg-fuchsia-500/25 text-fuchsia-200 border border-fuchsia-400/50 font-semibold">E#${id}</span>`
@@ -1047,12 +1162,13 @@ export function createLlmExplorer(root){
 
       // 1. Calculate KV Cache Memory (GB) vs Standard MHA Baseline
       // Standard MHA per token per layer = 2 (K & V) * num_heads * head_dim(128)
-      const {baselineGB,currentGB,savingPct}=estimateLlmKv(cfg,{batchSize:B,seqLen:S,precisionBytes:bytes});
-      get('kv-arch-name').textContent=cfg.attn_mode==='mla'?`MLA 潜在缓存 (d_c=${cfg.kv_lora_rank}+${cfg.qk_rope_head_dim||64})`:cfg.attn_mode==='gqa'?`GQA 分组缓存 (${cfg.num_key_value_heads||8} KV Heads)`:'Hybrid SSM+GQA 混合缓存';
-      get('kv-current-gb').textContent = currentGB.toFixed(2) + ' GiB';
-      get('kv-baseline-gb').textContent = baselineGB.toFixed(2) + ' GiB';
-      get('kv-saving-badge').textContent = `节省 ${savingPct.toFixed(1)}%`;
-      get('kv-current-bar').style.width = `${Math.max(4, (currentGB / baselineGB) * 100)}%`;
+      const kv=estimateLlmKv(cfg,{batchSize:B,seqLen:S,precisionBytes:bytes});
+      get('kv-arch-name').textContent=kv.label;
+      get('kv-current-gb').textContent=kv.currentGB===null?'未披露':kv.currentGB.toFixed(3)+' GiB';
+      get('kv-baseline-gb').textContent=kv.baselineGB===null?'—':kv.baselineGB.toFixed(2)+' GiB';
+      get('kv-saving-badge').textContent=kv.savingPct===null?(cfg.availability==='preview'?'不推算':'官方全局口径'):`载荷减少 ${kv.savingPct.toFixed(1)}%`;
+      get('kv-current-bar').style.width=kv.currentGB===null?'0%':`${Math.min(100,Math.max(2,kv.currentGB/kv.baselineGB*100))}%`;
+      get('kv-estimate-note').textContent=kv.note;
 
       // Scale 3D KV Cache blocks live
       const kvScale = getKVCacheVisualScale();
@@ -1060,26 +1176,12 @@ export function createLlmExplorer(root){
         mesh.scale.set(kvScale, kvScale, kvScale);
       });
 
-      // 2. Calculate Total & Active Parameter Counts
-      const H = cfg.hidden_size;
-      const attnParamsPerLayer = cfg.attn_mode === 'mla'
-        ? (H * cfg.kv_lora_rank + cfg.kv_lora_rank * cfg.num_attention_heads * 256 + H * cfg.q_lora_rank + cfg.q_lora_rank * cfg.num_attention_heads * 192 + cfg.num_attention_heads * 128 * H)
-        : (H * H * 2.5);
-
-      const denseFFNParams = 3 * H * cfg.intermediate_size;
-      const moeTotalFFNParams = (cfg.n_routed_experts + cfg.n_shared_experts) * 3 * H * cfg.moe_intermediate_size;
-      const moeActiveFFNParams = (cfg.num_experts_per_tok + cfg.n_shared_experts) * 3 * H * cfg.moe_intermediate_size;
-
-      const denseLayers = Math.min(L, cfg.first_k_dense_replace);
-      const moeLayers = Math.max(0, L - denseLayers);
-
-      const totalParams = 2 * 129280 * H + L * attnParamsPerLayer +
-        (cfg.n_routed_experts > 0 ? (denseLayers * denseFFNParams + moeLayers * moeTotalFFNParams) : L * denseFFNParams);
-      const activeParams = 2 * 129280 * H + L * attnParamsPerLayer +
-        (cfg.n_routed_experts > 0 ? (denseLayers * denseFFNParams + moeLayers * moeActiveFFNParams) : L * denseFFNParams);
-
-      get('total-params-val').textContent = (totalParams / 1e9).toFixed(1) + ' B';
-      get('active-params-val').textContent = (activeParams / 1e9).toFixed(1) + ' B';
+      const params=estimateLlmParameters(cfg);
+      get('total-params-caption').textContent=params.official?'参数规模（官方）':'参数规模（矩阵估算）';
+      get('active-params-caption').textContent=cfg.active_caption??(params.official?'单 Token 激活（官方）':'单 Token 激活（矩阵估算）');
+      get('total-params-val').textContent=params.total;
+      get('active-params-val').textContent=params.active;
+      renderModelSummary(root,cfg,state.activeLayer,index=>{state.selectedNodeId='attn_core';setActiveLayer(index);});
 
       // 3. Update 3D Tensor Shape Badges
       htmlLabels.forEach(item => {
@@ -1133,10 +1235,14 @@ export function createLlmExplorer(root){
 
     function renderConfigEditorInputs() {
       const cfg = state.config;
+      if(cfg.availability==='preview'){
+        root.querySelectorAll('#tab-config-content input').forEach(el=>el.value='');
+        get('config-json-preview').textContent=JSON.stringify({model_id:cfg.model_id,max_context_tokens:cfg.max_position_embeddings,architecture:'未披露',source:cfg.source_url},null,2);return;
+      }
       get('cfg-hidden-size').value = cfg.hidden_size;
       get('cfg-num-layers').value = cfg.num_layers;
       get('cfg-num-heads').value = cfg.num_attention_heads;
-      get('cfg-kv-param').value = cfg.kv_lora_rank;
+      get('cfg-kv-param').value = cfg.kv_lora_rank??'';
       get('cfg-routed-experts').value = cfg.n_routed_experts;
       get('cfg-topk').value = cfg.num_experts_per_tok;
 
@@ -1161,7 +1267,7 @@ export function createLlmExplorer(root){
         rms_norm_eps: 1e-6,
         torch_dtype: state.precision
       };
-      get('config-json-preview').textContent = JSON.stringify(hfJson, null, 2);
+      get('config-json-preview').textContent = JSON.stringify(cfg.verified?cfg.raw_config:hfJson, null, 2);
     }
 
     /*************************************************************************
@@ -1223,6 +1329,7 @@ export function createLlmExplorer(root){
     }
 
     function setLOD(lodLevel) {
+      if(state.config.availability==='preview')lodLevel=1;
       state.lod = lodLevel;root.dataset.lod=String(lodLevel);
       root.querySelectorAll('.lod-btn').forEach(btn => {
         const isCurrent = parseInt(btn.dataset.lod) === lodLevel;
@@ -1235,40 +1342,30 @@ export function createLlmExplorer(root){
 
     function setActiveLayer(layerIdx) {
       const cfg = state.config;
-      state.activeLayer = THREE.MathUtils.clamp(layerIdx, 0, cfg.num_layers - 1);
-      get('layer-slider').max = cfg.num_layers - 1;
+      state.activeLayer = THREE.MathUtils.clamp(layerIdx, 0, (cfg.num_layers??1) - 1);
+      get('layer-slider').max = Math.max(1,(cfg.num_layers??1) - 1);
       get('layer-slider').value = state.activeLayer;
 
-      const isDense = state.activeLayer < cfg.first_k_dense_replace || cfg.n_routed_experts === 0;
-      const isSSM = cfg.attn_mode === 'ssm_hybrid' && (state.activeLayer % 4 !== 3);
-      const tag = isSSM ? 'Mamba-2 + MoE' : (isDense ? 'Dense' : 'MoE');
-      get('active-layer-badge').textContent = `Layer #${state.activeLayer} (${tag})`;
-      get('layer-range-min').textContent=cfg.attn_mode==='ssm_hybrid'?'Layer 0 (SSM)':cfg.first_k_dense_replace>0||!cfg.n_routed_experts?'Layer 0 (Dense)':'Layer 0 (MoE)';
-      get('reroute-moe-btn').disabled=!cfg.n_routed_experts;
-      get('layer-range-max').textContent = `Layer ${cfg.num_layers - 1}`;
+      const layer=getLlmLayer(cfg,state.activeLayer);
+      get('active-layer-badge').textContent=cfg.availability==='preview'?'内部未披露':`#${state.activeLayer} · ${ATTENTION_NAMES[layer.attention]} · ${layer.dense?'Dense':'MoE'}`;
+      get('layer-range-min').textContent=cfg.availability==='preview'?'产品接口视图':'层号从 0 开始';
+      get('layer-range-max').textContent=cfg.num_layers?`共 ${cfg.num_layers} 层 · ${layer.stage}`:'不填充推测层数';
 
       buildArchitectureScene(false);
     }
 
-    // Architecture Preset Switcher Buttons
-    root.querySelectorAll('.preset-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.preset;
-        state.presetKey = key;root.dataset.preset=key;
-        state.config = normalizeLlmConfig(ARCH_PRESETS[key]);
-        state.activeLayer = Math.min(4, state.config.num_layers - 1);
-        state.activeExperts=chooseLlmExperts(state.config);
-        state.selectedNodeId=state.config.attn_mode==='mla'?'mla_kv_latent':'attn_core';
-
-        root.querySelectorAll('.preset-btn').forEach(b => {
-          const active = b.dataset.preset === key;
-          b.className = active
-            ? 'preset-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 bg-cyan-500/20 text-cyan-200 border border-cyan-400/50 shadow-sm shadow-cyan-500/20'
-            : 'preset-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent';
-        });
-
-        setActiveLayer(state.activeLayer);
-      });
+    initializeModelPicker(root,ARCH_PRESETS,initialKey,key=>{
+      state.presetKey=key;root.dataset.preset=key;
+      state.config=normalizeLlmConfig(ARCH_PRESETS[key]);
+      state.activeLayer=Math.min(4,(state.config.num_layers??1)-1);
+      state.activeExperts=chooseLlmExperts(state.config);
+      state.selectedNodeId='attn_core';
+      if(state.config.availability==='preview')state.lod=1;
+      root.dataset.lod=String(state.lod);
+      state.seqLen=Math.min(state.seqLen,state.config.max_position_embeddings??32768);
+      get('seq-slider').value=state.seqLen;get('seq-val').textContent=state.seqLen.toLocaleString();
+      setActiveLayer(state.activeLayer);
+      setLOD(state.lod);
     });
 
     // LOD Switcher Buttons
@@ -1352,6 +1449,7 @@ export function createLlmExplorer(root){
 
     // Apply Live config.json Edits
     get('apply-config-btn').addEventListener('click',()=>{
+      if(state.config.verified||state.config.availability==='preview')return;
       state.config=normalizeLlmConfig({...state.config,hidden_size:get('cfg-hidden-size').value,num_layers:get('cfg-num-layers').value,num_attention_heads:get('cfg-num-heads').value,kv_lora_rank:get('cfg-kv-param').value,n_routed_experts:get('cfg-routed-experts').value,num_experts_per_tok:get('cfg-topk').value});
       state.activeExperts=chooseLlmExperts(state.config);setActiveLayer(Math.min(state.activeLayer,state.config.num_layers-1));
     });
@@ -1519,12 +1617,15 @@ export function createLlmExplorer(root){
 
     // Start the mounted instance
     function start() {
-      setLOD(state.lod);
+      setActiveLayer(state.activeLayer);setLOD(state.lod);
       get('toggle-flow-btn').textContent=state.flowRunning?'粒子流: 运行中':'粒子流: 已暂停';
       selectComponent(state.selectedNodeId);
       animate();
     };
   
     start();
-    return {dispose(){disposed=true;cancelAnimationFrame(frame);clearTimeout(copyTimer);observer.disconnect();controls.dispose();disposeLlmObject(scene);scene.clear();renderer.dispose();renderer.domElement.remove();},modalContent(type){return type==='sources'?`<div class="eyebrow">LLM ARCHITECTURE / IMPORTED EXPLORER</div><h2>LLM 架构与张量流</h2><p class="modal-intro">基于你提供的 LLM-Arch 3D 页面，保留 DeepSeek 风格 MLA / MoE、Dense GQA / SwiGLU 与 Hybrid MoE-Mamba 三类可编辑预设。</p><div class="model-disclaimer"><div><strong>估算与示意范围</strong><p>参数、FLOPs 和 KV 缓存按页面公式推演，不是运行测量。Hybrid 为结构示例，KV 估算仅计算其注意力层缓存，不包含 SSM 状态、分配开销和权重显存。模型塔、专家排布与粒子动画表示功能结构和流程，不能解释为实际算子调度或硬件位置。</p></div></div>`:`<div class="eyebrow">EXPLORE THE MODEL</div><h2>从模型塔走进算子。</h2><p class="modal-intro">顶部切换架构预设与三个语义层级：L1 模型塔、L2 单层拓扑、L3 算子内部。点击模型组件，在检查器阅读公式、张量形状和示例代码。</p><p class="modal-intro">参数面板可调整层号、Batch、序列长度与精度；配置编辑器可改变结构。相机工具支持重置、俯视、旋转、残差线和标签开关。可随机选择激活专家来观察 Top-K 路由。</p>`;}};
+    return {dispose(){disposed=true;cancelAnimationFrame(frame);clearTimeout(copyTimer);observer.disconnect();controls.dispose();disposeLlmObject(scene);scene.clear();renderer.dispose();renderer.domElement.remove();},modalContent(type){
+      const c=state.config;
+      return type==='sources'?`<div class="eyebrow">LLM MODEL ATLAS / PRIMARY SOURCES</div><h2>${c.name}</h2><p class="modal-intro">${c.summary??c.badge}</p><p class="modal-intro">${c.parameter_note??'可编辑的教学预设。'}</p>${c.source_url?`<p><a href="${c.source_url}" target="_blank" rel="noopener noreferrer">官方${c.availability==='preview'?'产品说明':'架构配置'} ↗</a> · <a href="${c.card_url}" target="_blank" rel="noopener noreferrer">${c.availability==='preview'?'发布记录':'模型卡'} ↗</a></p>`:''}<div class="model-disclaimer"><div><strong>图示与统计口径</strong><p>核验日期：2026-10-21。开放模型使用固定版本的官方架构字段；未披露的预览模型只显示服务接口。KV 卡片分别标明有效载荷、全局缓存或未知口径；不表示完整部署显存。模型塔采用代表层，专家立方体为完整数量；连线、位置和随机路由表示功能依赖，不是运行测量或物理布局。</p></div></div>`:`<div class="eyebrow">EXPLORE THE MODEL</div><h2>从模型塔走进算子。</h2><p class="modal-intro">选择模型后，切换 L1 模型塔、L2 单层拓扑、L3 算子内部。顶部的注意力类型按钮可以跳到对应层；层号从 0 开始。</p><p class="modal-intro">点击组件查看解释、形状和接口示意。Batch、序列长度和缓存精度控制教学估算；CSA2 官方全局缓存按固定 FP4 口径单独计算。开放模型配置只读，教学预设支持编辑。Kimi K2.8 预览只显示已公开的接口与产品规格。</p>`;
+    }};
 }

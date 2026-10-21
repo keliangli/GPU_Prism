@@ -26,34 +26,19 @@
         <div>
           <div class="flex items-center gap-1.5">
             <h1 class="font-bold text-sm tracking-tight text-white">LLM-Arch 3D</h1>
-            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">v2.5 Explorer</span>
+            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">v3.0 · Model Atlas</span>
           </div>
           <p class="text-[10px] text-slate-400 hidden sm:block">开源大模型架构与张量流 3D 拆解引擎</p>
         </div>
       </div>
 
-      <!-- Preset Buttons -->
-      <div class="flex items-center gap-1.5" id="preset-buttons">
-        <button data-preset="deepseek" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 bg-cyan-500/20 text-cyan-200 border border-cyan-400/50 shadow-sm shadow-cyan-500/20">
-          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-          <span>DeepSeek-V3 / R1</span>
-          <span class="hidden md:inline text-[10px] font-mono text-cyan-300/80">(MLA + MoE + MTP)</span>
-        </button>
-        <button data-preset="qwen" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>Qwen3-32B / Llama-3</span>
-          <span class="hidden md:inline text-[10px] font-mono text-slate-400">(Dense GQA + SwiGLU)</span>
-        </button>
-        <button data-preset="hybrid" class="preset-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">
-          <span class="w-2 h-2 rounded-full bg-fuchsia-400"></span>
-          <span>Hybrid MoE-Mamba</span>
-          <span class="hidden md:inline text-[10px] font-mono text-slate-400">(SSM + GQA + MoE)</span>
-        </button>
-      </div>
+      <label class="llm-model-picker">选择模型
+        <select id="model-select" aria-label="选择 LLM 模型"></select>
+      </label>
     </div>
 
     <!-- 3-Level Semantic Zoom (LOD) Switcher -->
-    <div class="flex items-center gap-1.5 pointer-events-auto hud-glass px-2.5 py-2 rounded-2xl">
+    <div class="llm-lod-switcher flex items-center gap-1.5 pointer-events-auto hud-glass px-2.5 py-2 rounded-2xl">
       <span class="text-[11px] text-slate-400 px-1.5 hidden xl:inline font-medium">语义层级 (LOD):</span>
       <button data-lod="1" class="lod-btn px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 text-slate-300 hover:bg-slate-800/70 border border-transparent">
         <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
@@ -70,6 +55,12 @@
         <span>L3: 算子微观内部</span>
       </button>
     </div>
+    <section class="llm-model-summary" aria-live="polite">
+      <div class="llm-model-heading"><h2 id="model-name"></h2><span id="model-coverage"></span></div>
+      <p id="model-summary"></p>
+      <div class="llm-model-facts" id="model-facts"></div>
+      <div class="llm-model-bottom"><div id="model-layer-groups" class="llm-layer-groups" aria-label="按注意力类型跳转层"></div><nav id="model-sources" aria-label="模型官方资料"></nav></div>
+    </section>
   </header>
 
   <!-- ==================== LEFT FLOATING HUD: SIMULATION & HYPERPARAMETERS ==================== -->
@@ -121,7 +112,7 @@
         <div id="active-experts-box" class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 font-mono text-[11px]">
           <div class="flex items-center justify-between text-slate-400 mb-1">
             <span>激活路由专家 (Top-<span id="topk-count-label">8</span> / <span id="total-experts-label">256</span>):</span>
-            <span class="text-emerald-400">+1 共享专家常亮</span>
+            <span id="shared-experts-label" class="text-emerald-400"></span>
           </div>
           <div id="active-experts-list" class="flex flex-wrap gap-1 mt-1"></div>
         </div>
@@ -155,7 +146,7 @@
         <!-- Precision Selector -->
         <div class="space-y-1.5">
           <div class="flex justify-between items-center">
-            <label class="text-slate-400">权重/缓存精度 (Precision)</label>
+            <label class="text-slate-400">缓存元素精度（估算）</label>
             <span id="precision-bytes-label" class="font-mono text-[10px] text-slate-400">1 Byte / Elem</span>
           </div>
           <div class="grid grid-cols-3 gap-1.5" id="precision-buttons">
@@ -171,7 +162,7 @@
         <div class="flex items-center justify-between">
           <span class="font-semibold text-slate-200 flex items-center gap-1.5">
             <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-cyan-400"></i>
-            KV Cache 显存占用对比
+            KV 缓存有效载荷
           </span>
           <span id="kv-saving-badge" class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono text-[10px] font-semibold">
             节省 93.3%
@@ -203,16 +194,18 @@
         <!-- Total Parameters Summary -->
         <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px]">
           <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60">
-            <div class="text-slate-400">总参数量估算 (Total)</div>
+            <div class="text-slate-400"><span id="total-params-caption">参数规模</span></div>
             <div id="total-params-val" class="font-mono text-sm font-bold text-white mt-0.5">671.0 B</div>
           </div>
           <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60">
-            <div class="text-slate-400">单 Token 激活参数估算</div>
+            <div class="text-slate-400"><span id="active-params-caption">单 Token 激活参数</span></div>
             <div id="active-params-val" class="font-mono text-sm font-bold text-fuchsia-300 mt-0.5">37.2 B</div>
           </div>
         </div>
       </div>
 
+      <p id="kv-estimate-note" class="llm-estimate-note"></p>
+      <p id="parameter-note" class="llm-estimate-note"></p>
       <!-- Color Legend -->
       <div class="grid grid-cols-2 gap-1.5 pt-1 text-[11px] text-slate-300">
         <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cyan-400 shadow-sm shadow-cyan-400"></span>Attention / MLA</div>
@@ -323,7 +316,7 @@
     <!-- TAB 2: LIVE CONFIG.JSON EDITOR -->
     <div id="tab-config-content" class="hidden p-4 space-y-3.5 overflow-y-auto text-xs">
       <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[11px] leading-relaxed">
-        修改下方 <code class="font-mono text-white">config.json</code> 超参数，3D 场景中的算子体积、MoE 专家矩阵规模及显存占用将<strong>实时重绘</strong>。
+        <span id="config-edit-note">官方模型配置只读；教学预设可编辑参数并重绘。下方为架构字段摘录。</span>
       </div>
 
       <div class="grid grid-cols-2 gap-2.5">
@@ -345,7 +338,7 @@
         </div>
         <div>
           <label class="block text-[11px] text-fuchsia-300 mb-1 font-mono">n_routed_experts</label>
-          <input id="cfg-routed-experts" aria-label="路由专家数量" type="number" step="16" min="0" max="512" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-fuchsia-500/50 font-mono text-fuchsia-200 focus:border-fuchsia-400 outline-none" />
+          <input id="cfg-routed-experts" aria-label="路由专家数量" type="number" step="16" min="0" max="2048" class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-fuchsia-500/50 font-mono text-fuchsia-200 focus:border-fuchsia-400 outline-none" />
         </div>
         <div>
           <label class="block text-[11px] text-fuchsia-300 mb-1 font-mono">num_experts_per_tok</label>
@@ -360,8 +353,8 @@
 
       <div class="space-y-1">
         <div class="flex items-center justify-between text-[11px] text-slate-400">
-          <span class="font-mono">HuggingFace config.json 预览</span>
-          <span class="text-emerald-400 font-mono text-[10px]">实时同步</span>
+          <span class="font-mono">架构配置字段预览</span>
+          <span class="text-emerald-400 font-mono text-[10px]"><span id="config-mode-label">已核验</span></span>
         </div>
         <pre id="config-json-preview" class="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-emerald-300 overflow-x-auto max-h-60 leading-relaxed"></pre>
       </div>

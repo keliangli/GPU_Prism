@@ -1075,9 +1075,6 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   --tw-text-opacity: 1;
   color: rgb(103 232 249 / var(--tw-text-opacity, 1));
 }
-.llm-explorer .text-cyan-300\/80 {
-  color: rgb(103 232 249 / 0.8);
-}
 .llm-explorer .text-cyan-400 {
   --tw-text-opacity: 1;
   color: rgb(34 211 238 / var(--tw-text-opacity, 1));
@@ -1152,10 +1149,6 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 }
 .llm-explorer .shadow-cyan-400 {
   --tw-shadow-color: #22d3ee;
-  --tw-shadow: var(--tw-shadow-colored);
-}
-.llm-explorer .shadow-cyan-500\/20 {
-  --tw-shadow-color: rgb(6 182 212 / 0.2);
   --tw-shadow: var(--tw-shadow-colored);
 }
 .llm-explorer .shadow-cyan-500\/25 {

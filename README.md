@@ -295,6 +295,22 @@ npm run build
 
 顶部「LLM 架构」打开 `#/llm`，将用户提供的 `llm_arch_3d_explorer.html` 融入共享路由。支持 DeepSeek 风格 MLA / MoE / MTP、Dense GQA / SwiGLU、Hybrid MoE-Mamba 三类可编辑预设，提供 L1 模型塔、L2 单层拓扑和 L3 算子结构。
 
+模型选择器新增以下图鉴（核验日期 2026-10-21），开放模型使用固定版本的官方配置字段，保留原始层编号规则的转换和配置来源链接：
+
+| 模型 | 语言主干与可探索组件 | 路由专家 / 每 Token / 共享 |
+| --- | --- | --- |
+| DeepSeek-V4.1-Flash | 20 层因果编码器 + 20 层解码器；CSA2 Full/Reindex/Reuse、SWA、跨层 KV、Engram、Single-Pass mHC、DSpark、视觉入口 | 384 / 6 / 1 |
+| GLM-5.3 | 78 层 MLA / DSA；前三层 Dense、稀疏索引器及 IndexShare、MoE、MTP | 256 / 8 / 1 |
+| Kimi-K3 | 93 层：69 KDA + 24 Gated MLA；短卷积、门控、递推状态、AttnRes、3584 维 LatentMoE、视觉入口 | 896 / 16 / 2 |
+| GLM-5.3-Flash | 45 层：34 KDA + 11 稀疏 MLA；无独立 RoPE 分支，mHC、MoE、视觉入口、MTP | 288 / 8 / 1 |
+| Kimi-K2.8 Preview | 官方产品文档确认 1M 上下文、`kimi-for-coding` 和思考档位；只展示输入／服务／输出接口，未披露层数、专家数与缓存布局 | 未披露 |
+
+注意力类型按钮会跳到对应的真实层。模型塔用代表层表达堆叠，L3 专家阵列显示完整专家数量，随机重路由仅供教学。新开放模型的配置只读；原有三类教学预设继续支持编辑。
+
+参数卡区分模型卡公布值与矩阵估算。DeepSeek 的 552 B 主干与 196 B Engram 单独列示，8 B / 16 B 分别为 Prefill / Decode；其 890 bytes/token 是官方 FP4 全局缓存口径，已包含跨层共享，不再乘层数，也不随估算精度按钮改变。KDA 混合模型的缓存估算只计算 MLA 层载荷，排除递推状态、短卷积状态、索引器、分配开销与权重；稀疏 Top-K 读取不能直接视为 KV 淘汰。K2.8 未公开的数据保持未知。
+
+固定来源版本、原配置校验和及摘录范围见 [模型来源](docs/llm/model-sources.json)，所选官方架构字段见 `docs/llm/models/`。`src/llm/models.js` 负责模型与层类型映射，`components.js` 提供模型专属组件解释；代码片段均为接口示意，不是可运行的推理实现。
+
 保留张量粒子流、Top-K 专家重路由、输入输出形状、公式和代码示意、Batch / 序列长度 / 精度切换、配置编辑，以及相机和标签控制。侧栏在窄屏移至画布下方；离开页面释放 GPU 资源、动画与观察器。
 
 实现位于 `src/llm/`。样式和图标随项目本地构建，不加载原页面的 CDN 脚本；`npm run dev` / `npm run build` 自动生成局部样式，也可执行 `npm run llm:styles`。原文件校验信息见 [导入记录](docs/llm/import-manifest.json)。

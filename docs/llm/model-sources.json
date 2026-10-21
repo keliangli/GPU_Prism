@@ -1,0 +1,56 @@
+[
+  {
+    "repository": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "revision": "314113f8a7dadb388215396ba5fbee2c610a04d6",
+    "retrieved": "2026-10-21",
+    "config_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/314113f8a7dadb388215396ba5fbee2c610a04d6/config.json",
+    "card_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/314113f8a7dadb388215396ba5fbee2c610a04d6/README.md",
+    "sha256": "8be45ce0476004a3f529fd896115a4a2e800a129ad2d3ec05b16050f52e21879",
+    "snapshot_scope": "Architecture fields selected from config.json; quantization tensor allowlists and generation defaults omitted."
+  },
+  {
+    "repository": "zai-org/GLM-5.3",
+    "revision": "ba32f8c19c8738e2c57c71798c601d477a7bf844",
+    "retrieved": "2026-10-21",
+    "config_url": "https://huggingface.co/zai-org/GLM-5.3/blob/ba32f8c19c8738e2c57c71798c601d477a7bf844/config.json",
+    "card_url": "https://huggingface.co/zai-org/GLM-5.3/blob/ba32f8c19c8738e2c57c71798c601d477a7bf844/README.md",
+    "sha256": "3ac72612095574542f7fff847ada8e59d9199dd8af44bdf625d7e02615572e69",
+    "snapshot_scope": "Architecture fields selected from config.json; quantization tensor allowlists and generation defaults omitted."
+  },
+  {
+    "repository": "zai-org/GLM-5.3-Flash",
+    "revision": "46a050bec13002ad29ee795c16e61cf4fa3c4a9c",
+    "retrieved": "2026-10-21",
+    "config_url": "https://huggingface.co/zai-org/GLM-5.3-Flash/blob/46a050bec13002ad29ee795c16e61cf4fa3c4a9c/config.json",
+    "card_url": "https://huggingface.co/zai-org/GLM-5.3-Flash/blob/46a050bec13002ad29ee795c16e61cf4fa3c4a9c/README.md",
+    "sha256": "bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+    "snapshot_scope": "Architecture fields selected from config.json; quantization tensor allowlists and generation defaults omitted."
+  },
+  {
+    "repository": "moonshotai/Kimi-K3",
+    "revision": "f831ab66814297da540d832a5235f8e904f29d06",
+    "retrieved": "2026-10-21",
+    "config_url": "https://huggingface.co/moonshotai/Kimi-K3/blob/f831ab66814297da540d832a5235f8e904f29d06/config.json",
+    "card_url": "https://huggingface.co/moonshotai/Kimi-K3/blob/f831ab66814297da540d832a5235f8e904f29d06/README.md",
+    "sha256": "9710e121a58d03ac92c8d6da287a19541994319afbbe6d6202af001ffd379213",
+    "snapshot_scope": "Architecture fields selected from config.json; quantization tensor allowlists and generation defaults omitted."
+  },
+  {
+    "model": "Kimi-K2.8 Preview",
+    "availability": "product_preview",
+    "retrieved": "2026-10-21",
+    "source_url": "https://www.kimi.com/code/docs/kimi-code/models.html",
+    "release_url": "https://www.kimi.com/code/docs/en/kimi-code/whats-new.html",
+    "confirmed": {
+      "model_id": "kimi-for-coding",
+      "context_tokens": 1048576,
+      "thinking_effort": [
+        "low",
+        "high",
+        "max"
+      ]
+    },
+    "architecture_config": null,
+    "note": "No verified public architecture config located; do not infer K2 or K3 internals."
+  }
+]
