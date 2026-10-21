@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import template from './template.html?raw';
 import { ARCH_PRESETS, normalizeLlmConfig, chooseLlmExperts, estimateLlmKv } from './data.js';
 import { renderLlmIcons } from './icons.js';
@@ -7,6 +12,8 @@ import { disposeLlmObject } from './resources.js';
 import { ATTENTION_NAMES, getLlmLayer, estimateLlmParameters } from './models.js';
 import { getPublishedComponent } from './components.js';
 import { initializeModelPicker, renderModelSummary } from './catalog-ui.js';
+import { createTechBlock, createTechEnvironment, styleTechComponent } from './visuals.js';
+import { frameLlmBounds, llmFrameDelta, createEnergyConduit, createFlowPackets, createSelectionCorners } from './scene-motion.js';
 import './utilities.css';
 import './style.css';
 
@@ -230,8 +237,8 @@ export function createLlmExplorer(root){
     const labelsContainer = get('labels-container');
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x07090e);
-    scene.fog = new THREE.FogExp2(0x07090e, 0.0085);
+    scene.background = new THREE.Color(0x050b16);
+    scene.fog = new THREE.FogExp2(0x050b16, 0.006);
 
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
     camera.position.set(0, 18, 38);
@@ -239,11 +246,20 @@ export function createLlmExplorer(root){
     let renderer;
     try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});}catch{container.innerHTML='<div class="llm-no-webgl">此浏览器无法启动 WebGL，3D 视图暂不可用。请使用支持 WebGL 的浏览器。</div>';root.querySelectorAll('button,input').forEach(el=>el.disabled=true);return {dispose(){},modalContent:()=>'<h2>LLM 架构视图</h2><p class="modal-intro">当前环境无法启动 WebGL。此视图需要 WebGL 来显示三级模型与张量流。</p>'};}
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.22;
     renderer.domElement.setAttribute('aria-label','可旋转的 LLM 三级架构与张量流三维视图');renderer.domElement.setAttribute('role','img');
     container.appendChild(renderer.domElement);
+    let glowEnabled=false,composer=null,bloomPass=null,outputPass=null;
+    function ensureComposer(){
+      if(composer)return;
+      composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));
+      bloomPass=new UnrealBloomPass(new THREE.Vector2(container.clientWidth,container.clientHeight),.4,.42,.9);
+      outputPass=new OutputPass();composer.addPass(bloomPass);composer.addPass(outputPass);
+    }
+    function syncGlowButton(){get('toggle-glow-btn').setAttribute('aria-pressed',String(glowEnabled));get('glow-button-text').textContent=glowEnabled?'柔光已开':'柔光已关';}
+    syncGlowButton();
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = !reducedMotion;
@@ -261,9 +277,21 @@ export function createLlmExplorer(root){
     };
 
     function flyCameraTo(pos, look) {
+      if(reducedMotion){camera.position.copy(pos);controls.target.copy(look);camTransition.active=false;return;}
       camTransition.targetPos.copy(pos);
       camTransition.targetLook.copy(look);
       camTransition.active = true;
+    }
+
+    let hasFramed=false;
+    function frameArchitecture(focus='all',direction=null){
+      if(!archGroup.children.length)return;
+      const bounds=new THREE.Box3();
+      if(focus==='all')bounds.setFromObject(archGroup);
+      else for(const mesh of interactiveMeshes){if(focus==='attn'?mesh.position.x<2:mesh.position.x>=2)bounds.expandByObject(mesh);}
+      const view=direction??(state.lod===1?new THREE.Vector3(.42,.22,1):state.lod===2?new THREE.Vector3(.35,.6,1.4):new THREE.Vector3(.8,.65,1.3));
+      const framed=frameLlmBounds(bounds,camera.aspect,camera.fov,view,state.lod===1?1.2:1.17);
+      flyCameraTo(framed.position,framed.target);hasFramed=true;
     }
 
     // Cancel automatic camera transition when user manually drags
@@ -272,14 +300,14 @@ export function createLlmExplorer(root){
     });
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.65);
+    const ambientLight = new THREE.HemisphereLight(0xbfdcff,0x172744,1.8);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0x38bdf8, 1.1);
+    const dirLight1 = new THREE.DirectionalLight(0xc4e5ff, 2.5);
     dirLight1.position.set(25, 40, 30);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xe879f9, 0.85);
+    const dirLight2 = new THREE.DirectionalLight(0xb2a1ff, 1.8);
     dirLight2.position.set(-30, 25, -20);
     scene.add(dirLight2);
 
@@ -287,20 +315,7 @@ export function createLlmExplorer(root){
     pointLightCenter.position.set(0, 8, 5);
     scene.add(pointLightCenter);
 
-    // Subtle High-Tech Floor Grid
-    const gridGroup = new THREE.Group();
-    const gridHelper = new THREE.GridHelper(120, 60, 0x1e293b, 0x0f172a);
-    gridHelper.position.y = -8;
-    gridGroup.add(gridHelper);
-
-    // Glowing Polar Ring on Floor
-    const ringGeo = new THREE.RingGeometry(18, 18.15, 64);
-    ringGeo.rotateX(-Math.PI / 2);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9, side: THREE.DoubleSide, transparent: true, opacity: 0.25 });
-    const floorRing = new THREE.Mesh(ringGeo, ringMat);
-    floorRing.position.y = -7.95;
-    gridGroup.add(floorRing);
-    scene.add(gridGroup);
+    const environment=createTechEnvironment({reducedMotion,compact:window.innerWidth<=700});scene.add(environment.group);
 
     /*************************************************************************
      * 3. SCENE GRAPH MANAGEMENT (NODES, EDGES, PARTICLES, LABELS)
@@ -313,6 +328,8 @@ export function createLlmExplorer(root){
 
     let interactiveMeshes = [];   // Meshes for raycasting
     let htmlLabels = [];          // { el, worldPos, nodeId, isTensorBadge }
+    const flowClock={value:0};
+    let simulationTime=0,previousFrame=null,environmentTime=0;
     let flowParticles = [];       // { mesh, curve, progress, speed }
     let animatedRings = [];       // RoPE 3D rotating rings
     let kvCacheMeshes = [];       // Dynamic KV cache blocks that scale with B & S
@@ -325,39 +342,29 @@ export function createLlmExplorer(root){
 
     // Shared Materials Palette
     const COLORS = {
-      cyan: 0x06b6d4,
-      cyanBright: 0x22d3ee,
-      magenta: 0xd946ef,
-      violet: 0x8b5cf6,
-      emerald: 0x10b981,
-      amber: 0xf59e0b,
+      cyan: 0x58bde7,
+      cyanBright: 0x8cdbff,
+      magenta: 0xb7a0ff,
+      violet: 0x9180e3,
+      emerald: 0x7ae1c8,
+      amber: 0xedc987,
       slate: 0x334155,
       darkSlate: 0x1e293b
     };
 
     function createGlowingBlock(w, h, d, colorHex, opacity = 0.88) {
-      const geo = new THREE.BoxGeometry(w, h, d);
-      const mat = new THREE.MeshPhysicalMaterial({
-        color: colorHex,
-        emissive: colorHex,
-        emissiveIntensity: 0.25,
-        metalness: 0.25,
-        roughness: 0.2,
-        transparent: true,
-        opacity: opacity
-      });
-      const mesh = new THREE.Mesh(geo, mat);
+      return createTechBlock(w,h,d,colorHex,opacity);
+    }
 
-      // Subtle glowing edge wireframe
-      const edges = new THREE.EdgesGeometry(geo);
-      const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
-      const wireframe = new THREE.LineSegments(edges, lineMat);
-      mesh.add(wireframe);
-
+    function createJunction(radius){
+      const geometry=new THREE.IcosahedronGeometry(radius,0);
+      const mesh=new THREE.Mesh(geometry,new THREE.MeshPhysicalMaterial({color:0x484c62,metalness:.65,roughness:.3,clearcoat:.4,emissive:0xa08a5b,emissiveIntensity:.12}));
+      mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry),new THREE.LineBasicMaterial({color:0xedc987,transparent:true,opacity:.8,toneMapped:false})));
       return mesh;
     }
 
     function registerInteractiveNode(mesh, nodeId, title, subtitle, labelOffset = new THREE.Vector3(0, 1.8, 0), showLabel = true) {
+      styleTechComponent(mesh,nodeId);
       mesh.userData = { nodeId, title, subtitle };
       interactiveMeshes.push(mesh);
 
@@ -425,31 +432,12 @@ export function createLlmExplorer(root){
 
     function createConnectionTube(points, colorHex = 0x22d3ee, radius = 0.09, isResidual = false, particleCount = 3, speed = 0.0045) {
       const curve = new THREE.CatmullRomCurve3(points);
-      const tubeGeo = new THREE.TubeGeometry(curve, 36, radius, 8, false);
-      const tubeMat = new THREE.MeshBasicMaterial({
-        color: colorHex,
-        transparent: true,
-        opacity: isResidual ? 0.45 : 0.35
-      });
-      const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
-      const targetParent = isResidual ? residualGroup : archGroup;
-      targetParent.add(tubeMesh);
-
-      // Spawn glowing particles traveling along the curve
-      const pGeo = new THREE.SphereGeometry(radius * 2.4, 10, 10);
-      const pMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      for (let i = 0; i < particleCount; i++) {
-        const pMesh = new THREE.Mesh(pGeo, pMat.clone());
-        pMesh.material.color.setHex(colorHex === 0xf59e0b ? 0xfde047 : 0x67e8f9);
-        targetParent.add(pMesh);
-        flowParticles.push({
-          mesh: pMesh,
-          curve,
-          progress: i / particleCount,
-          speed: speed,
-          isResidual
-        });
-      }
+      const targetParent=isResidual?residualGroup:archGroup;
+      const rate=speed*60;
+      targetParent.add(createEnergyConduit(curve,colorHex,flowClock,{radius:radius*.38,repeats:Math.max(2,particleCount),rate,residual:isResidual}));
+      const packets=createFlowPackets(curve,colorHex,particleCount,isResidual?.048:.063);
+      targetParent.add(packets.mesh);packets.update(flowClock.value,rate);
+      flowParticles.push({...packets,rate,isResidual});
       return curve;
     }
 
@@ -506,16 +494,12 @@ export function createLlmExplorer(root){
       clearSceneStage();
       if(state.config.availability==='preview'){
         buildPreviewInterface();
-        if(animateCamera)flyCameraTo(new THREE.Vector3(0,8,36),new THREE.Vector3(0,0,0));
       } else if (state.lod === 1) {
         buildL1MacroTower();
-        if (animateCamera) flyCameraTo(new THREE.Vector3(0, 8, 36), new THREE.Vector3(0, 5, 0));
       } else if (state.lod === 2) {
         buildL2ExplodedLayer();
-        if (animateCamera) flyCameraTo(new THREE.Vector3(0, 14, 32), new THREE.Vector3(0, 1, 0));
       } else {
         buildL3MicroOperators();
-        if (animateCamera) flyCameraTo(new THREE.Vector3(0, 19, 38), new THREE.Vector3(0, 1, 0));
       }
 
       if(state.config.verified&&state.lod>1){
@@ -535,9 +519,11 @@ export function createLlmExplorer(root){
           linkModules([[-18,-4.8,1],[-18.5,0,0]],COLORS.amber);
         }
       }
+      environment.setLod(state.lod);
       residualGroup.visible = state.showResiduals;
       labelsContainer.style.display = state.showLabels ? 'block' : 'none';
       updateAllMetricsAndUI();
+      if(animateCamera)frameArchitecture();
     }
 
     function moduleBlock(id,title,sub,x,y,z,color,w=3.2,h=2.2,d=2.8){
@@ -754,10 +740,7 @@ export function createLlmExplorer(root){
       ], COLORS.emerald, 0.08, false, 2, 0.008);
 
       // 4. First Residual Add (+)
-      const resAdd1 = new THREE.Mesh(
-        new THREE.SphereGeometry(1.15, 24, 24),
-        new THREE.MeshPhysicalMaterial({ color: COLORS.amber, emissive: COLORS.amber, emissiveIntensity: 0.4, roughness: 0.2 })
-      );
+      const resAdd1 = createJunction(1.15);
       resAdd1.position.set(0, yBase, 0);
       archGroup.add(resAdd1);
       registerInteractiveNode(resAdd1,'residual_add',residualTitle(),'Attention → 残差流混合',new THREE.Vector3(0,2,0));
@@ -777,10 +760,7 @@ export function createLlmExplorer(root){
       registerInteractiveNode(ffnBlock, 'moe_experts', ffnTitle, ffnSub, new THREE.Vector3(0, 3.2, 0));
 
       // 7. Second Residual Add (+) & Output
-      const resAdd2 = new THREE.Mesh(
-        new THREE.SphereGeometry(1.15, 24, 24),
-        new THREE.MeshPhysicalMaterial({ color: COLORS.amber, emissive: COLORS.amber, emissiveIntensity: 0.4, roughness: 0.2 })
-      );
+      const resAdd2 = createJunction(1.15);
       resAdd2.position.set(17, yBase, 0);
       archGroup.add(resAdd2);
       registerInteractiveNode(resAdd2,'residual_add',residualTitle(),'FFN → 残差流混合',new THREE.Vector3(0,2,0));
@@ -907,10 +887,7 @@ export function createLlmExplorer(root){
       }
 
       // Mid Residual Add (+) & Post-Attn RMSNorm
-      const midAdd = new THREE.Mesh(
-        new THREE.SphereGeometry(0.95, 24, 24),
-        new THREE.MeshPhysicalMaterial({ color: COLORS.amber, emissive: COLORS.amber, emissiveIntensity: 0.4 })
-      );
+      const midAdd = createJunction(0.95);
       midAdd.position.set(-0.5, 0, 0);
       archGroup.add(midAdd);
       registerInteractiveNode(midAdd,'residual_add',residualTitle(),'Attention → residual stream',new THREE.Vector3(0,1.7,0));
@@ -956,11 +933,10 @@ export function createLlmExplorer(root){
         const depthLayers = nE>512?4:2;
         const rows = Math.ceil(nE / (cols * depthLayers));
 
-        const boxGeo = new THREE.BoxGeometry(0.46, 0.46, 0.46);
+        const boxGeo = new RoundedBoxGeometry(.46,.46,.46,1,.05);
         const boxMat = new THREE.MeshStandardMaterial({
           color: 0xffffff,
-          roughness: 0.25,
-          metalness: 0.2,emissive:0x473450,emissiveIntensity:.35
+          roughness:.32,metalness:.5,emissive:0x132347,emissiveIntensity:.28
         });
         moeInstancedMesh = new THREE.InstancedMesh(boxGeo, boxMat, nE);
         moeInstancedMesh.position.set(12.2, -0.5, -0.5);
@@ -1001,10 +977,7 @@ export function createLlmExplorer(root){
         }
 
         // Weighted Sum & Final Layer Residual Add
-        const outAdd = new THREE.Mesh(
-          new THREE.SphereGeometry(1.05, 24, 24),
-          new THREE.MeshPhysicalMaterial({ color: COLORS.amber, emissive: COLORS.amber, emissiveIntensity: 0.45 })
-        );
+        const outAdd = createJunction(1.05);
         outAdd.position.set(18.0, 0, 0);
         archGroup.add(outAdd);
         registerInteractiveNode(outAdd,'residual_add',residualTitle(),`Layer #${state.activeLayer} Output`,new THREE.Vector3(0,1.9,0));
@@ -1039,10 +1012,7 @@ export function createLlmExplorer(root){
         archGroup.add(downProj);
         registerInteractiveNode(downProj, 'moe_experts', 'Element-wise ⊙ & Down Proj', `${cfg.intermediate_size} → ${cfg.hidden_size}`, new THREE.Vector3(0, 2.5, 0));
 
-        const outAdd = new THREE.Mesh(
-          new THREE.SphereGeometry(1.05, 24, 24),
-          new THREE.MeshPhysicalMaterial({ color: COLORS.amber, emissive: COLORS.amber, emissiveIntensity: 0.45 })
-        );
+        const outAdd = createJunction(1.05);
         outAdd.position.set(18.0, 0, 0);
         archGroup.add(outAdd);
         registerInteractiveNode(outAdd, 'residual_add', 'Final Residual Add (+)', `Layer #${state.activeLayer} Output`, new THREE.Vector3(0, 1.9, 0));
@@ -1090,9 +1060,9 @@ export function createLlmExplorer(root){
       for (let i = 0; i < nE; i++) {
         const isActive = state.activeExperts.includes(i);
         if (isActive) {
-          color.setHex(0xf43f5e); // Radiant rose-magenta glow
+          color.setHex(0xd2b0ff).multiplyScalar(1.5); // Active compute cells
         } else {
-          color.setHex(0x79618f); // Keep inactive experts readable in the modern renderer
+          color.setHex(0x415579); // Cool, legible inactive silicon
         }
         moeInstancedMesh.setColorAt(i, color);
 
@@ -1127,9 +1097,7 @@ export function createLlmExplorer(root){
           new THREE.Vector3((moeRouterOrigin.x + expPos.x) * 0.5, expPos.y * 1.15, expPos.z * 1.2),
           expPos
         ]);
-        const geo1 = new THREE.TubeGeometry(c1, 20, 0.055, 6, false);
-        const mat1 = new THREE.MeshBasicMaterial({ color: 0xf472b6, transparent: true, opacity: 0.78 });
-        moeLaserGroup.add(new THREE.Mesh(geo1, mat1));
+        moeLaserGroup.add(createEnergyConduit(c1,0xcbb0ff,flowClock,{radius:.031,repeats:2,rate:.44}));
 
         // Curve 2: Active Expert -> Output Sum
         const c2 = new THREE.CatmullRomCurve3([
@@ -1137,9 +1105,7 @@ export function createLlmExplorer(root){
           new THREE.Vector3((expPos.x + moeSumTarget.x) * 0.5, expPos.y * 1.15, expPos.z * 1.2),
           moeSumTarget
         ]);
-        const geo2 = new THREE.TubeGeometry(c2, 20, 0.055, 6, false);
-        const mat2 = new THREE.MeshBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.65 });
-        moeLaserGroup.add(new THREE.Mesh(geo2, mat2));
+        moeLaserGroup.add(createEnergyConduit(c2,0xb7a0ff,flowClock,{radius:.028,repeats:2,rate:.44}));
       });
     }
 
@@ -1207,12 +1173,7 @@ export function createLlmExplorer(root){
         const box = new THREE.Box3().setFromObject(mesh);
         const size = new THREE.Vector3();
         box.getSize(size);
-        const haloGeo = new THREE.BoxGeometry(size.x * 1.12, size.y * 1.12, size.z * 1.12);
-        const haloEdges = new THREE.EdgesGeometry(haloGeo);haloGeo.dispose();
-        selectionHalo = new THREE.LineSegments(
-          haloEdges,
-          new THREE.LineBasicMaterial({ color: 0x22d3ee })
-        );
+        selectionHalo=createSelectionCorners(size.multiplyScalar(1.1));
         mesh.getWorldPosition(selectionHalo.position);
         archGroup.add(selectionHalo);
       }
@@ -1220,6 +1181,8 @@ export function createLlmExplorer(root){
 
     function renderInspectorPanel(nodeId) {
       const info = getComponentDetails(nodeId);
+      get('scene-selection-title').textContent=info.title;
+      get('scene-selection-desc').textContent=info.desc;
       get('insp-category').textContent = info.category;
       get('insp-title').textContent = info.title;
       get('insp-desc').textContent = info.desc;
@@ -1462,29 +1425,33 @@ export function createLlmExplorer(root){
     });
 
     // Bottom Camera & Viewport Controls
+    get('toggle-immersive-btn').addEventListener('click',()=>{
+      const immersive=root.classList.toggle('llm-immersive');
+      get('toggle-immersive-btn').setAttribute('aria-pressed',String(immersive));
+      get('immersive-button-text').textContent=immersive?'退出沉浸':'沉浸视图';
+    });
+    get('toggle-glow-btn').addEventListener('click',()=>{glowEnabled=!glowEnabled;syncGlowButton();});
+    get('scene-open-inspector').addEventListener('click',()=>{
+      root.classList.remove('llm-immersive');get('toggle-immersive-btn').setAttribute('aria-pressed','false');get('immersive-button-text').textContent='沉浸视图';
+      get('tab-inspector-btn').click();get('right-panel').scrollIntoView({block:'nearest',behavior:'instant'});
+    });
     root.querySelectorAll('.cam-focus-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const target = btn.dataset.focus;
-        if (target === 'attn') {
-          flyCameraTo(new THREE.Vector3(-10, 11, 22), new THREE.Vector3(-10, 0, 0));
-        } else if (target === 'ffn') {
-          flyCameraTo(new THREE.Vector3(11, 11, 22), new THREE.Vector3(11, 0, 0));
-        } else {
-          flyCameraTo(new THREE.Vector3(0, 19, 38), new THREE.Vector3(0, 1, 0));
-        }
+        frameArchitecture(target==='attn'?'attn':target==='ffn'?'ffn':'all');
       });
     });
 
     get('cam-reset-btn').addEventListener('click', () => {
-      flyCameraTo(new THREE.Vector3(0, 18, 38), new THREE.Vector3(0, 1, 0));
+      frameArchitecture();
     });
 
     get('cam-top-btn').addEventListener('click', () => {
-      flyCameraTo(new THREE.Vector3(0, 44, 0.1), new THREE.Vector3(0, 0, 0));
+      frameArchitecture('all',new THREE.Vector3(0,1,.03));
     });
 
     get('cam-side-btn').addEventListener('click', () => {
-      flyCameraTo(new THREE.Vector3(0, 3, 42), new THREE.Vector3(0, 1, 0));
+      frameArchitecture('all',new THREE.Vector3(0,.05,1));
     });
 
     get('toggle-rotate-btn').addEventListener('click', (e) => {
@@ -1524,7 +1491,11 @@ export function createLlmExplorer(root){
     });
 
     // Responsive Window Resize
-    const resize=()=>{const w=container.clientWidth,h=container.clientHeight;if(!w||!h)return;camera.aspect=w/h;camera.zoom=Math.min(1,camera.aspect/1.35);camera.updateProjectionMatrix();renderer.setSize(w,h);};
+    const resize=()=>{
+      const w=container.clientWidth,h=container.clientHeight;if(!w||!h)return;
+      camera.aspect=w/h;camera.zoom=1;camera.updateProjectionMatrix();renderer.setSize(w,h);composer?.setSize(w,h);
+      if(hasFramed)frameArchitecture('all',camTransition.active?camTransition.targetPos.clone().sub(camTransition.targetLook):camera.position.clone().sub(controls.target));
+    };
     const observer=new ResizeObserver(resize);observer.observe(container);resize();
 
     /*************************************************************************
@@ -1572,46 +1543,42 @@ export function createLlmExplorer(root){
       });
     }
 
-    function animate() {
+    function animate(timestamp=performance.now()) {
       if(disposed)return;frame=requestAnimationFrame(animate);
+      const dt=llmFrameDelta(previousFrame,timestamp);previousFrame=timestamp;
+      environmentTime+=dt;environment.update(environmentTime);
+      if(state.flowRunning){simulationTime+=dt;flowClock.value=simulationTime;}
+
 
       // Smooth Camera Fly-To Interpolation
       if (camTransition.active) {
-        camera.position.lerp(camTransition.targetPos, camTransition.alpha);
-        controls.target.lerp(camTransition.targetLook, camTransition.alpha);
+        camera.position.lerp(camTransition.targetPos, 1-Math.exp(-5*dt));
+        controls.target.lerp(camTransition.targetLook, 1-Math.exp(-5*dt));
         if (camera.position.distanceTo(camTransition.targetPos) < 0.15) {
           camTransition.active = false;
         }
       }
 
-      controls.update();
+      controls.update(dt);
 
-      // Advance Tensor Flow Particles along 3D Curves
-      if (state.flowRunning) {
-        flowParticles.forEach(p => {
-          if (p.isResidual && !state.showResiduals) {
-            p.mesh.visible = false;
-            return;
-          }
-          p.mesh.visible = true;
-          p.progress = (p.progress + p.speed) % 1;
-          p.curve.getPointAt(p.progress, p.mesh.position);
-        });
+      for(const packets of flowParticles){
+        packets.mesh.visible=!packets.isResidual||state.showResiduals;
+        if(state.flowRunning)packets.update(simulationTime,packets.rate);
       }
 
       // Rotate Decoupled RoPE 3D Rings
       if(!reducedMotion) animatedRings.forEach(ring => {
-        ring.rotation.z += 0.018;
-        ring.rotation.y += 0.008;
+        ring.rotation.z += dt*1.08;
+        ring.rotation.y += dt*.48;
       });
 
       // Subtle pulse on Selection Halo
       if (selectionHalo&&!reducedMotion) {
-        const s = 1 + Math.sin(Date.now() * 0.005) * 0.03;
-        selectionHalo.scale.set(s, s, s);
+        selectionHalo.material.opacity=.78+Math.sin(environmentTime*1.8)*.12;
       }
 
-      camera.updateMatrixWorld(true);scene.updateMatrixWorld(true);renderer.render(scene, camera);
+      camera.updateMatrixWorld(true);scene.updateMatrixWorld(true);
+      if(glowEnabled){ensureComposer();composer.render(dt);}else renderer.render(scene,camera);
       updateProjectedLabels();
     }
 
@@ -1624,7 +1591,7 @@ export function createLlmExplorer(root){
     };
   
     start();
-    return {dispose(){disposed=true;cancelAnimationFrame(frame);clearTimeout(copyTimer);observer.disconnect();controls.dispose();disposeLlmObject(scene);scene.clear();renderer.dispose();renderer.domElement.remove();},modalContent(type){
+    return {dispose(){disposed=true;cancelAnimationFrame(frame);clearTimeout(copyTimer);observer.disconnect();controls.dispose();bloomPass?.dispose();outputPass?.dispose();composer?.dispose();disposeLlmObject(scene);scene.clear();renderer.dispose();renderer.domElement.remove();},modalContent(type){
       const c=state.config;
       return type==='sources'?`<div class="eyebrow">LLM MODEL ATLAS / PRIMARY SOURCES</div><h2>${c.name}</h2><p class="modal-intro">${c.summary??c.badge}</p><p class="modal-intro">${c.parameter_note??'可编辑的教学预设。'}</p>${c.source_url?`<p><a href="${c.source_url}" target="_blank" rel="noopener noreferrer">官方${c.availability==='preview'?'产品说明':'架构配置'} ↗</a> · <a href="${c.card_url}" target="_blank" rel="noopener noreferrer">${c.availability==='preview'?'发布记录':'模型卡'} ↗</a></p>`:''}<div class="model-disclaimer"><div><strong>图示与统计口径</strong><p>核验日期：2026-10-21。开放模型使用固定版本的官方架构字段；未披露的预览模型只显示服务接口。KV 卡片分别标明有效载荷、全局缓存或未知口径；不表示完整部署显存。模型塔采用代表层，专家立方体为完整数量；连线、位置和随机路由表示功能依赖，不是运行测量或物理布局。</p></div></div>`:`<div class="eyebrow">EXPLORE THE MODEL</div><h2>从模型塔走进算子。</h2><p class="modal-intro">选择模型后，切换 L1 模型塔、L2 单层拓扑、L3 算子内部。顶部的注意力类型按钮可以跳到对应层；层号从 0 开始。</p><p class="modal-intro">点击组件查看解释、形状和接口示意。Batch、序列长度和缓存精度控制教学估算；CSA2 官方全局缓存按固定 FP4 口径单独计算。开放模型配置只读，教学预设支持编辑。Kimi K2.8 预览只显示已公开的接口与产品规格。</p>`;
     }};
