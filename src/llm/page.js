@@ -1534,9 +1534,10 @@ export function createLlmExplorer(root){
         item.el.style.top = `${y}px`;
         const w=item.el.offsetWidth,h=item.el.offsetHeight;
         const rect={x:x-w/2,y:y-(item.isTensorBadge?h/2:h),w,h};
+        const outside=rect.x<8||rect.x+w>container.clientWidth-8||rect.y<12||rect.y+h>container.clientHeight-18;
         const collides=placed.some(r=>rect.x<r.x+r.w+4&&rect.x+rect.w+4>r.x&&rect.y<r.y+r.h+4&&rect.y+rect.h+4>r.y);
-        item.el.style.visibility=collides?'hidden':'visible';
-        if(!collides)placed.push(rect);
+        item.el.style.visibility=outside||collides?'hidden':'visible';
+        if(!outside&&!collides)placed.push(rect);
         item.el.classList.toggle('llm-label-selected',item.nodeId===state.selectedNodeId);
         item.el.style.opacity = '1';
         item.el.style.pointerEvents = item.isTensorBadge ? 'none' : 'auto';

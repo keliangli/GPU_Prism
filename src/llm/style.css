@@ -127,4 +127,5 @@ body:has(.llm-explorer) .site-footer button{color:#91aac5}
 .llm-explorer .llm-selection-readout strong{font-size:12px;color:#d5ebfc}
 .llm-explorer .llm-selection-readout p{font-size:10px;line-height:1.7;color:#99afc7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .llm-explorer .llm-selection-readout button{justify-self:start;color:#a5ddff;font-size:10px;margin-top:5px;padding:3px 0}
+.llm-explorer .label-3d{width:max-content}
 @media(max-width:700px){.llm-explorer .llm-selection-readout{left:20px;top:70px;max-width:210px;padding:9px 12px}.llm-explorer .llm-selection-readout p{-webkit-line-clamp:2}}
