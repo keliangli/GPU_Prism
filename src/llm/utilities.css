@@ -630,6 +630,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
   --tw-translate-x: -50%;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
+.llm-explorer .transform {
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
 .llm-explorer .resize {
   resize: both;
 }
@@ -1041,6 +1044,10 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 }
 .llm-explorer .uppercase {
   text-transform: uppercase;
+}
+.llm-explorer .ordinal {
+  --tw-ordinal: ordinal;
+  font-variant-numeric: var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);
 }
 .llm-explorer .leading-relaxed {
   line-height: 1.625;
