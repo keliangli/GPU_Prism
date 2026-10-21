@@ -88,7 +88,7 @@ export function createLlmExplorer(root){
         mla_kv_latent: {
           category: 'MLA Core Innovation',
           title: 'MLA 潜在 KV 压缩缓存 (Latent c_t^KV)',
-          desc: `DeepSeek-V3/R1 架构精髓：通过下投影 W^DKV 将 ${H} 维隐状态压缩至仅 ${dc} 维的低秩潜在向量 c_t^KV。在自回归解码阶段，只需缓存该潜在向量（矩阵吸收后无需缓存展开的 K/V），显存骤降 93%！`,
+          desc: `DeepSeek-V3/R1 架构精髓：通过下投影 W^DKV 将 ${H} 维隐状态压缩至仅 ${dc} 维的低秩潜在向量 c_t^KV。在自回归解码阶段，只需缓存该潜在向量（矩阵吸收后无需缓存展开的 K/V），缓存规模随压缩维度变化，估算见左侧对比。`,
           inShape: `[${B}, ${S}, ${H}]`,
           outShape: `[${B}, ${S}, ${dc}]`,
           params: fmtNum(H * dc + dc * nH * 256),
