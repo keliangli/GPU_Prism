@@ -551,6 +551,9 @@ Constrain images and videos to the parent width and preserve their intrinsic asp
 .llm-explorer .grid {
   display: grid;
 }
+.llm-explorer .\!hidden {
+  display: none !important;
+}
 .llm-explorer .hidden {
   display: none;
 }

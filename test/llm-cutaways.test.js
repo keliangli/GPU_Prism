@@ -34,7 +34,7 @@ test('router sample and path counts adapt to each actual model configuration', (
     assert.equal(data.sampleIds.length, Math.min(24, routed)); assert.equal(new Set(data.sampleIds).size, data.sampleIds.length);
     assert.equal(data.visibleActive, topK);
     const lines = cutaway.group.children.find(c => c.isLineSegments && c.geometry.drawRange.count !== Infinity);
-    assert.equal(lines.geometry.drawRange.count, (topK + shared) * 2);
+    assert.equal(lines.geometry.drawRange.count, (topK + shared) * 4);
     assert.ok(cutaway.note.includes(`${routed}`)); assert.ok(cutaway.note.includes('抽样'));
     disposeLlmObject(body);
   }
@@ -89,4 +89,24 @@ test('paused time produces deterministic internals and preview / unrelated parts
   assert.deepEqual(Array.from(instances.instanceMatrix.array), first); assert.deepEqual(Array.from(instances.instanceColor.array), colors);
   cutaway.update({ openness: Number.NaN, time: Infinity }); assert.equal(cutaway.group.visible, false);
   disposeLlmObject(body);
+});
+
+test('each internal mechanism visibly changes across subsecond frames and freezes at the same time', () => {
+  const parts = [['attn_core', 'swa'], ['attn_core', 'csa2'], ['mla_kv_latent', 'mla'],
+    ['csa_cache', 'csa2'], ['kda_state', 'kda'], ['moe_router', 'mla'], ['shared_expert', 'mla']];
+  const readInstances = group => group.children.filter(object => object.isInstancedMesh).map(object => ({
+    matrix: Array.from(object.instanceMatrix.array), color: Array.from(object.instanceColor?.array ?? [])
+  }));
+  for (const [nodeId, attention] of parts) {
+    const body = createTechBlock(4, 3, 4, 0x58bde7);
+    const cutaway = createComponentCutaway(body, nodeId, { n_routed_experts: 384, num_experts_per_tok: 6, n_shared_experts: 1 }, { attention });
+    const update = time => cutaway.update({ openness: 1, time, activeExperts: [0, 8, 16, 32, 64, 128] });
+    update(1); const before = readInstances(cutaway.group);
+    update(1.3); const moving = readInstances(cutaway.group);
+    assert.notDeepEqual(moving, before, nodeId);
+    update(1.3); assert.deepEqual(readInstances(cutaway.group), moving, nodeId);
+    // Geometry motion must not imply a different expert selection.
+    if (nodeId === 'moe_router') assert.deepEqual(cutaway.group.userData.sampleIds.slice(0, 6), [0, 8, 16, 32, 64, 128]);
+    disposeLlmObject(body);
+  }
 });

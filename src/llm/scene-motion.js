@@ -41,11 +41,28 @@ export function createFlowPackets(curve,color,count,radius=.065){
   const mesh=new THREE.InstancedMesh(new THREE.OctahedronGeometry(1,0),material,count);
   mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.frustumCulled=false;
   const dummy=new THREE.Object3D(),forward=new THREE.Vector3(0,0,1);
-  return {mesh,update(time,rate){
+  return {mesh,update(time,rate,visualScale=1){
     for(let i=0;i<count;i++){
       const t=(i/count+time*rate)%1;
       curve.getPointAt(t,dummy.position);dummy.quaternion.setFromUnitVectors(forward,curve.getTangentAt(t));
-      dummy.scale.set(radius,radius,radius*3.2);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+      dummy.scale.set(radius*visualScale,radius*visualScale,radius*3.2*visualScale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate=true;
+  }};
+}
+
+// Interleaved router→expert and expert→sum paths share one draw call.
+export function createRoutePackets(curves,color=0xe6caff,radius=.15){
+  const mesh=new THREE.InstancedMesh(new THREE.OctahedronGeometry(1,0),new THREE.MeshBasicMaterial({color,toneMapped:false}),curves.length);
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.frustumCulled=false;
+  const dummy=new THREE.Object3D(),forward=new THREE.Vector3(0,0,1);
+  return {mesh,update(time,rate=1/3.6){
+    const phase=((time*rate)%1+1)%1;
+    for(let i=0;i<curves.length;i++){
+      const incoming=i%2===0,active=incoming?phase<.5:phase>=.5,t=incoming?phase*2:(phase-.5)*2;
+      const curve=curves[i],progress=THREE.MathUtils.clamp(t,0,1);
+      curve.getPointAt(progress,dummy.position);dummy.quaternion.setFromUnitVectors(forward,curve.getTangentAt(progress));
+      dummy.scale.setScalar(active?radius:0);dummy.scale.z*=2.4;dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
     }
     mesh.instanceMatrix.needsUpdate=true;
   }};

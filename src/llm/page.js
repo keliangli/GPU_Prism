@@ -13,11 +13,12 @@ import { ATTENTION_NAMES, getLlmLayer, estimateLlmParameters } from './models.js
 import { getPublishedComponent } from './components.js';
 import { initializeModelPicker, renderModelSummary } from './catalog-ui.js';
 import { createTechBlock, createTechEnvironment, styleTechComponent } from './visuals.js';
-import { frameLlmBounds, llmFrameDelta, createEnergyConduit, createFlowPackets, createSelectionCorners } from './scene-motion.js';
+import { frameLlmBounds, llmFrameDelta, createEnergyConduit, createFlowPackets, createRoutePackets, createSelectionCorners } from './scene-motion.js';
 import { createLlmStory, StoryPlayer } from './stories.js';
 import { mountStoryUi } from './story-ui.js';
 import { createComponentCutaway } from './cutaways.js';
 import { sceneInstanceKey, resolveFlowNodes, flowMatchesFocus } from './scene-semantics.js';
+import { llmAnimationRunning, storyCameraOffset, storyExperts } from './animation-state.js';
 import './utilities.css';
 import './style.css';
 
@@ -31,6 +32,7 @@ export function createLlmExplorer(root){
   let storyUi=null,currentStory=null,storyActive=false,applyingStory=false,storySaved=null;
   let storyFocus=null,storyResidual=false,storyStatus='',lastStoryIndex=-1,lastStoryPaint=-1;
   let inspectedKey=null,materialStates=[],cutawayStates=[],cutawayMaterials=new Set(),flowEdges=[],nodeOrdinals=new Map();
+  let storyCameraPose=null,storyRouteStep=-1;
 
     // Initialize Lucide icons
     renderLlmIcons(root);
@@ -299,7 +301,7 @@ export function createLlmExplorer(root){
       else for(const mesh of interactiveMeshes){if(focus==='attn'?mesh.position.x<2:mesh.position.x>=2)bounds.expandByObject(mesh);}
       const view=direction??(state.lod===1?new THREE.Vector3(.42,.22,1):state.lod===2?new THREE.Vector3(.35,.6,1.4):new THREE.Vector3(.8,.65,1.3));
       const framed=frameLlmBounds(bounds,camera.aspect,camera.fov,view,state.lod===1?1.2:1.17);
-      flyCameraTo(framed.position,framed.target);hasFramed=true;
+      flyCameraTo(framed.position,framed.target);hasFramed=true;return framed;
     }
 
     // Cancel automatic camera transition when user manually drags
@@ -347,6 +349,7 @@ export function createLlmExplorer(root){
     let moeLaserGroup = null;     // Dynamic laser beams from Router to Top-K experts
     let moeRouterOrigin = null;
     let moeSumTarget = null;
+    let moeRoutingPackets = null;
     let selectionHalo = null;     // Highlight wireframe box around selected node
 
     // Shared Materials Palette
@@ -500,6 +503,7 @@ export function createLlmExplorer(root){
       moeInstancedMesh = null;
       moeExpertPositions = [];
       moeLaserGroup = null;
+      moeRoutingPackets = null;
       selectionHalo = null;
       materialStates=[];cutawayStates=[];cutawayMaterials=new Set();flowEdges=[];nodeOrdinals=new Map();inspectedKey=null;
     }
@@ -1119,6 +1123,7 @@ export function createLlmExplorer(root){
         moeLaserGroup.remove(moeLaserGroup.children[0]);
       }
 
+      const routeCurves=[];
       state.activeExperts.forEach((expertIdx) => {
         const expPos = moeExpertPositions[expertIdx];
         if (!expPos) return;
@@ -1138,7 +1143,10 @@ export function createLlmExplorer(root){
           moeSumTarget
         ]);
         moeLaserGroup.add(createEnergyConduit(c2,0xb7a0ff,flowClock,{radius:.028,repeats:2,rate:.44}));
+        routeCurves.push(c1,c2);
       });
+      moeRoutingPackets=createRoutePackets(routeCurves,0xe6caff,.15);
+      moeLaserGroup.add(moeRoutingPackets.mesh);
     }
 
     function getKVCacheVisualScale() {
@@ -1194,11 +1202,11 @@ export function createLlmExplorer(root){
     }
 
     function frameNodes(meshes,direction=null){
-      if(!meshes.length){frameArchitecture();return;}
+      if(!meshes.length)return frameArchitecture('all',direction?new THREE.Vector3(...direction):null);
       const bounds=new THREE.Box3();for(const mesh of meshes)bounds.expandByObject(mesh);
       const back=direction?new THREE.Vector3(...direction):new THREE.Vector3(.3,.35,1.35);
       const framed=frameLlmBounds(bounds,camera.aspect,camera.fov,back,1.32);
-      flyCameraTo(framed.position,framed.target);hasFramed=true;
+      flyCameraTo(framed.position,framed.target);hasFramed=true;return framed;
     }
 
     function paintStory(){
@@ -1222,7 +1230,7 @@ export function createLlmExplorer(root){
     }
 
     function pauseStoryCamera(){
-      if(storyActive){storyPlayer.pause();storyStatus='已暂停 · 正在自由调整视角';paintStory();}
+      if(storyActive){storyPlayer.pause();camTransition.active=false;storyStatus='已暂停 · 正在自由调整视角';paintStory();}
     }
 
     function refreshStory(){
@@ -1242,15 +1250,16 @@ export function createLlmExplorer(root){
       storyResidual=chapter.nodeIds.includes('residual_add');
       root.dataset.storyTargets=String(targets.length);root.dataset.storyChapter=chapter.id;
       if(targets[0])selectComponent(targets[0].userData.nodeId,targets[0],{narrated:true});
-      frameNodes(targets,chapter.direction);
-      lastStoryIndex=snap.index;storyStatus=reducedMotion?'已减少动态效果 · 可手动切换章节':'';
+      storyCameraPose=frameNodes(targets,chapter.direction);storyRouteStep=-1;
+      if(!snap.playing){camera.position.copy(storyCameraPose.position);controls.target.copy(storyCameraPose.target);camTransition.active=false;}
+      lastStoryIndex=snap.index;storyStatus=reducedMotion?(snap.playing?'低动态播放 · 机制动画运行中':'已减少运镜 · 点击继续播放机制动画'):'';
       paintStory();
     }
 
     function startStory(){
       if(!currentStory?.chapters.length)return;
       if(storyActive){exitStory();return;}
-      storySaved={lod:state.lod,layer:state.activeLayer,flowRunning:state.flowRunning,autoRotate:state.autoRotate,showResiduals:state.showResiduals,showLabels:state.showLabels,immersive:root.classList.contains('llm-immersive')};
+      storySaved={lod:state.lod,layer:state.activeLayer,flowRunning:state.flowRunning,autoRotate:state.autoRotate,showResiduals:state.showResiduals,showLabels:state.showLabels,activeExperts:[...state.activeExperts],immersive:root.classList.contains('llm-immersive')};
       root.classList.remove('llm-immersive');
       storyActive=true;state.flowRunning=!reducedMotion;state.autoRotate=false;controls.autoRotate=false;
       state.showResiduals=true;state.showLabels=true;
@@ -1259,13 +1268,16 @@ export function createLlmExplorer(root){
 
     function exitStory(restore=true){
       if(!storyActive)return;
-      storyActive=false;storyPlayer.pause();storyFocus=null;storyResidual=false;inspectedKey=null;
+      storyActive=false;storyPlayer.pause();storyFocus=null;storyResidual=false;inspectedKey=null;storyCameraPose=null;
+      flowClock.value=simulationTime;
       delete root.dataset.storyTargets;delete root.dataset.storyChapter;
       if(storySaved){
         root.classList.toggle('llm-immersive',storySaved.immersive);
         state.flowRunning=storySaved.flowRunning;state.autoRotate=storySaved.autoRotate;controls.autoRotate=state.autoRotate;
+        state.activeExperts=storySaved.activeExperts;
         state.showResiduals=storySaved.showResiduals;state.showLabels=storySaved.showLabels;
         if(restore){setLOD(storySaved.lod,false);setActiveLayer(storySaved.layer,false);buildArchitectureScene(true);}
+        else updateMoERoutingVisuals();
       }
       storySaved=null;storyStatus='';paintStory();
       syncSceneToggles();
@@ -1274,10 +1286,10 @@ export function createLlmExplorer(root){
     function jumpStory(index){storyPlayer.seek(index);applyStoryChapter();}
     function toggleStoryPlay(){
       const before=storyPlayer.snapshot();
-      if(before.playing){storyPlayer.pause();storyStatus='已暂停 · 可拖动查看组件';}
+      if(before.playing){storyPlayer.pause();camTransition.active=false;storyStatus='已暂停 · 可拖动查看组件';}
       else{storyPlayer.play();storyStatus='';if(storyPlayer.snapshot().index!==lastStoryIndex)applyStoryChapter();else{
         const chapter=currentStory.chapters[lastStoryIndex];
-        const targets=interactiveMeshes.filter(mesh=>storyFocus?.has(mesh.userData.instanceKey));frameNodes(targets,chapter.direction);
+        const targets=interactiveMeshes.filter(mesh=>storyFocus?.has(mesh.userData.instanceKey));storyCameraPose=frameNodes(targets,chapter.direction);
       }}
       paintStory();
     }
@@ -1308,7 +1320,7 @@ export function createLlmExplorer(root){
         const target=active?1:0;item.open=reducedMotion?target:THREE.MathUtils.lerp(item.open,target,1-Math.exp(-7*dt));
         if(Math.abs(item.open-target)<.001)item.open=target;
         const dim=storyActive&&storyFocus&&!storyFocus.has(item.mesh.userData.instanceKey)?.16:1;
-        item.cutaway.update({openness:item.open,time:simulationTime,activeExperts:state.activeExperts,dim});
+        item.cutaway.update({openness:item.open,time:flowClock.value,activeExperts:state.activeExperts,dim});
         const priority=item.cutaway.kind==='router'?3:['cache','state'].includes(item.cutaway.kind)?2:item.cutaway.kind==='attention'?1:0;
         if(item.open>.55&&priority>captionPriority){caption=item.cutaway.note;captionPriority=priority;}
       }
@@ -1671,7 +1683,8 @@ export function createLlmExplorer(root){
       camera.aspect=w/h;camera.zoom=1;camera.updateProjectionMatrix();renderer.setSize(w,h);composer?.setSize(w,h);
       if(hasFramed){
         const focus=storyActive&&storyFocus?interactiveMeshes.filter(mesh=>storyFocus.has(mesh.userData.instanceKey)):[];
-        if(focus.length)frameNodes(focus);else frameArchitecture('all',camTransition.active?camTransition.targetPos.clone().sub(camTransition.targetLook):camera.position.clone().sub(controls.target));
+        const pose=focus.length?frameNodes(focus):frameArchitecture('all',camTransition.active?camTransition.targetPos.clone().sub(camTransition.targetLook):camera.position.clone().sub(controls.target));
+        if(storyActive)storyCameraPose=pose;
       }
     };
     const observer=new ResizeObserver(resize);observer.observe(container);resize();
@@ -1727,13 +1740,32 @@ export function createLlmExplorer(root){
       if(disposed)return;frame=requestAnimationFrame(animate);
       const storyDt=previousFrame===null?0:Math.min(1,Math.max(0,(timestamp-previousFrame)/1000));
       const dt=llmFrameDelta(previousFrame,timestamp);previousFrame=timestamp;
+      let storySnapshot=storyPlayer.snapshot();
       if(storyActive){
         if(!document.hidden)storyPlayer.tick(storyDt);
-        const snap=storyPlayer.snapshot();if(snap.playing&&snap.index!==lastStoryIndex)applyStoryChapter();
-        if(timestamp-lastStoryPaint>200){paintStory();lastStoryPaint=timestamp;}
+        storySnapshot=storyPlayer.snapshot();if(storySnapshot.playing&&storySnapshot.index!==lastStoryIndex)applyStoryChapter();
+        if(storySnapshot.playing&&!document.hidden){
+          const chapter=currentStory.chapters[storySnapshot.index];
+          if(storyCameraPose&&!reducedMotion){
+            const base=storyCameraPose.position.clone().sub(storyCameraPose.target);
+            const offset=storyCameraOffset(base.toArray(),storySnapshot.chapterElapsed/chapter.duration);
+            camTransition.targetPos.copy(storyCameraPose.target).add(new THREE.Vector3(...offset));
+            camTransition.targetLook.copy(storyCameraPose.target);camTransition.active=true;
+          }
+          if(chapter.id==='experts'){
+            const step=Math.floor(storySnapshot.chapterElapsed/3.6);
+            if(step!==storyRouteStep){state.activeExperts=storyExperts(state.config,step);updateMoERoutingVisuals();storyRouteStep=step;}
+          }
+        }
       }
-      environmentTime+=dt;environment.update(environmentTime);
-      if(state.flowRunning){simulationTime+=dt;flowClock.value=simulationTime;}
+      const motionRunning=llmAnimationRunning({storyActive,storyPlaying:storySnapshot.playing,flowRunning:state.flowRunning,hidden:document.hidden});
+      if(motionRunning)environmentTime+=dt;environment.update(environmentTime);
+      if(storyActive)flowClock.value=storySnapshot.elapsed;
+      else if(motionRunning){simulationTime+=dt;flowClock.value=simulationTime;}
+      if(timestamp-lastStoryPaint>200){
+        root.dataset.animationTime=flowClock.value.toFixed(3);root.dataset.animationRunning=String(motionRunning);
+        if(storyActive)paintStory();lastStoryPaint=timestamp;
+      }
 
 
       // Smooth Camera Fly-To Interpolation
@@ -1748,12 +1780,13 @@ export function createLlmExplorer(root){
       controls.update(dt);
 
       for(const packets of flowParticles){
-        if(state.flowRunning&&packets.mesh.visible)packets.update(simulationTime,packets.rate);
+        if(packets.mesh.visible)packets.update(flowClock.value,packets.rate,storyActive?1.8:1);
       }
+      if(moeRoutingPackets)moeRoutingPackets.update(storyActive?storySnapshot.chapterElapsed:flowClock.value,1/3.6);
       updateSceneFocus(dt);
 
       // Rotate Decoupled RoPE 3D Rings
-      if(!reducedMotion) animatedRings.forEach(ring => {
+      if(motionRunning&&!reducedMotion) animatedRings.forEach(ring => {
         ring.rotation.z += dt*1.08;
         ring.rotation.y += dt*.48;
       });
