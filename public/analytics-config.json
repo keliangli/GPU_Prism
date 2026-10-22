@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "endpoint": "https://gpu-prism-analytics.alert-grass-7728.chatgpt.site/api/collect",
+  "allowedHosts": [
+    "keliangli.github.io",
+    "infar-gpu-atlas.alert-grass-7728.chatgpt.site"
+  ]
+}

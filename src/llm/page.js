@@ -19,6 +19,7 @@ import { mountStoryUi } from './story-ui.js';
 import { createComponentCutaway } from './cutaways.js';
 import { sceneInstanceKey, resolveFlowNodes, flowMatchesFocus } from './scene-semantics.js';
 import { llmAnimationRunning, storyCameraOffset, storyExperts } from './animation-state.js';
+import { trackEvent } from '../analytics.js';
 import './utilities.css';
 import './style.css';
 
@@ -1259,6 +1260,7 @@ export function createLlmExplorer(root){
     function startStory(){
       if(!currentStory?.chapters.length)return;
       if(storyActive){exitStory();return;}
+      trackEvent('story_start',{route:'/llm',model:state.presetKey});
       storySaved={lod:state.lod,layer:state.activeLayer,flowRunning:state.flowRunning,autoRotate:state.autoRotate,showResiduals:state.showResiduals,showLabels:state.showLabels,activeExperts:[...state.activeExperts],immersive:root.classList.contains('llm-immersive')};
       root.classList.remove('llm-immersive');
       storyActive=true;state.flowRunning=!reducedMotion;state.autoRotate=false;controls.autoRotate=false;
@@ -1287,7 +1289,7 @@ export function createLlmExplorer(root){
     function toggleStoryPlay(){
       const before=storyPlayer.snapshot();
       if(before.playing){storyPlayer.pause();camTransition.active=false;storyStatus='已暂停 · 可拖动查看组件';}
-      else{storyPlayer.play();storyStatus='';if(storyPlayer.snapshot().index!==lastStoryIndex)applyStoryChapter();else{
+      else{if(before.completed)trackEvent('story_start',{route:'/llm',model:state.presetKey});storyPlayer.play();storyStatus='';if(storyPlayer.snapshot().index!==lastStoryIndex)applyStoryChapter();else{
         const chapter=currentStory.chapters[lastStoryIndex];
         const targets=interactiveMeshes.filter(mesh=>storyFocus?.has(mesh.userData.instanceKey));storyCameraPose=frameNodes(targets,chapter.direction);
       }}
@@ -1498,6 +1500,7 @@ export function createLlmExplorer(root){
 
     initializeModelPicker(root,ARCH_PRESETS,initialKey,key=>{
       exitStory(false);
+      trackEvent('model_select',{route:'/llm',model:key});
       state.presetKey=key;root.dataset.preset=key;
       state.config=normalizeLlmConfig(ARCH_PRESETS[key]);
       state.activeLayer=Math.min(4,(state.config.num_layers??1)-1);
@@ -1742,8 +1745,10 @@ export function createLlmExplorer(root){
       const dt=llmFrameDelta(previousFrame,timestamp);previousFrame=timestamp;
       let storySnapshot=storyPlayer.snapshot();
       if(storyActive){
+        const wasCompleted=storySnapshot.completed;
         if(!document.hidden)storyPlayer.tick(storyDt);
         storySnapshot=storyPlayer.snapshot();if(storySnapshot.playing&&storySnapshot.index!==lastStoryIndex)applyStoryChapter();
+        if(!wasCompleted&&storySnapshot.completed)trackEvent('story_complete',{route:'/llm',model:state.presetKey});
         if(storySnapshot.playing&&!document.hidden){
           const chapter=currentStory.chapters[storySnapshot.index];
           if(storyCameraPose&&!reducedMotion){

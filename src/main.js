@@ -11,6 +11,7 @@ import './gpu-family.css';
 import './atlas-navigation.css';
 import { ResourcePanel } from './resource-panel.js';
 import { getComponentResourceInfo } from './gpu-resources.js';
+import { initializeAnalytics, trackEvent, trackPageView, analyticsDashboardUrl } from './analytics.js';
 
 const app = document.querySelector('#app');
 const modalRoot = document.querySelector('#modal-root');
@@ -19,6 +20,7 @@ let torchAtlas=null;
 let codeAtlas=null;
 let llmExplorer=null;
 let routeSequence=0;
+let analyticsGpu=null;
 let gpu = getGpu('h20');
 let levels=baseLevels,levelComponents=baseLevelComponents,flows=baseFlows;
 let components = getGpuComponents(gpu.id);
@@ -36,7 +38,7 @@ const lab = new DeepLab({onExperiment:data=>scene?.setExperiment?.(data),onSelec
 
 const logo = `<span class="brand-mark"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m16 3 13 7-13 7L3 10zM3 16l13 7 13-7M3 22l13 7 13-7" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg></span><span class="brand-name">infar<span class="brand-period">.</span></span>`;
 function header(explorer = false) { const section=/^#\/(pytorch|sglang|deepinfer|llm)(?:\/|$)/.exec(location.hash)?.[1]||'gpus';return `<header class="site-header"><a class="brand" href="#/gpus" aria-label="INFAR 首页">${logo}<span class="brand-divider"></span><span class="brand-caption">软硬件架构图鉴</span></a><nav aria-label="主导航"><a class="nav-item ${section==='gpus'?'active':''}" href="#/gpus">GPU 图鉴</a><a class="nav-item ${section==='pytorch'?'active':''}" href="#/pytorch">PyTorch 源码</a><a class="nav-item ${section==='sglang'?'active':''}" href="#/sglang">SGLang 源码</a><a class="nav-item ${section==='deepinfer'?'active':''}" href="#/deepinfer">DeepInfer 源码</a><a class="nav-item ${section==='llm'?'active':''}" href="#/llm">LLM 架构</a><button class="nav-item" data-action="guide">探索指南</button><button class="nav-item" data-action="sources">数据来源 ${icon('external',13)}</button></nav><div class="header-right"><span class="live-status"><i></i> 为理解算力而构建</span><span class="edition">BETA 0.9</span></div></header>`; }
-function footer() { return `<footer class="site-footer"><span>INFAR <span class="footer-dot">/</span> 看见架构，理解算力。</span><span>独立架构学习项目 <i>·</i> 非官方产品</span><button data-action="sources">来源与模型说明 ${icon('external',12)}</button></footer>`; }
+function footer() { const statsUrl=analyticsDashboardUrl();return `<footer class="site-footer"><span>INFAR <span class="footer-dot">/</span> 看见架构，理解算力。</span><span>独立架构学习项目 <i>·</i> 非官方产品</span><a data-analytics-dashboard href="${statsUrl||'#'}" ${statsUrl?'':'hidden'} target="_blank" rel="noopener noreferrer" style="color:inherit">访问统计 ↗</a><button data-action="sources">来源与模型说明 ${icon('external',12)}</button></footer>`; }
 
 // 搜索匹配字段统一由型号配置生成，主推卡片与网格卡片口径一致。
 function gpuSearchKey(p) { return `${p.vendor} ${p.name} ${p.id} ${p.architecture} ${p.formFactor}`.toLowerCase(); }
@@ -150,6 +152,7 @@ function setLevel(id) {
   document.querySelectorAll('[data-level]').forEach(el=>{el.classList.toggle('active',el.dataset.level===id);el.setAttribute('aria-pressed',el.dataset.level===id);});
   syncLevelChrome(id);
   history.replaceState(null,'',`#/gpu/${gpu.id}${id==='package'?'':`/${id}`}`);
+  trackPageView();
   renderComponentList();renderDetail();lab.mount(document.querySelector('#deep-lab-root'),id,gpu);
   resourcePanel.update(gpu.id,id);
   flowIndex=0;scene?.setFlowStep?.(0);
@@ -167,6 +170,8 @@ function filterGpus() {
 function destroyScene() {stopFlowTimer();scene?.dispose();scene=null;}
 async function route() {
   const sequence=++routeSequence;
+  trackPageView();
+  if(!/^#\/gpu\//.test(location.hash))analyticsGpu=null;
   closeModal();
   if(/^#\/llm(?:\/|$)/.test(location.hash)){
     destroyScene();torchAtlas?.dispose();torchAtlas=null;codeAtlas?.dispose();codeAtlas=null;
@@ -204,6 +209,8 @@ async function route() {
   torchAtlas?.dispose();torchAtlas=null;
   const requested=parseGpuRoute(location.hash);
   if(requested){
+    if(analyticsGpu!==requested.gpuId)trackEvent('model_select',{model:requested.gpuId});
+    analyticsGpu=requested.gpuId;
     activateGpu(requested.gpuId);
     state.level=requested.level;state.selected=levels[state.level].default;
     explorer();syncLevelChrome(state.level);
@@ -269,3 +276,7 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('change',e=>{if(e.target.id==='gpu-switch'){location.hash=`/gpu/${e.target.value}${state.level==='package'?'':`/${state.level}`}`;}});
 window.addEventListener('hashchange',route);
 route();
+void initializeAnalytics().then(()=>{
+  const url=analyticsDashboardUrl();
+  document.querySelectorAll('[data-analytics-dashboard]').forEach(link=>{link.hidden=!url;if(url)link.href=url;});
+});
